@@ -32,13 +32,17 @@ def compute_default_mu(beta, average_kappa, D=1):
     out /= (2 * (np.pi**((D/2.)+1.)) * average_kappa)
     return out
 
+@njit
 def compute_angular_distance(phi, theta):
     return np.pi - abs(np.pi - abs(phi - theta))
 
+@njit
 def compute_attractiveness(i, phi, placed_nodes, placed_phis, y):
     rhs = 2./(placed_nodes**(1./(y-1.)))
     rhs /= i**((y-2.)/(y-1.))
-    lhs = compute_angular_distance(phi, placed_phis)
+    lhs = np.zeros(placed_nodes.shape)
+    for j in range(len(placed_phis)):
+        lhs[j] = compute_angular_distance(phi, placed_phis[j])
     return np.sum(np.where(lhs < rhs, 1, 0))
 
 def compute_expected_degree(i, phis, kappas, R, beta, mu):
@@ -54,7 +58,7 @@ def compute_expected_degree(i, phis, kappas, R, beta, mu):
 
 # Sets parameters
 
-N = 200
+N = 100
 y = 2.5
 V = 10.
 R = compute_radius(N)
@@ -63,21 +67,23 @@ average_degree = 3.
 
 # Computes angular coordinates from GPA and Guille's algo
 
-nodes = []
-phis = []
+nodes = [1]
+phis = [(np.random.random(size=1)*2*np.pi)[0]]
     
-for i in tqdm(range(1, N+1)):
+for i in tqdm(range(2, N+1)):
     candidate_phis = np.random.random(size=i)*2*np.pi
     A_candidates_phis = np.zeros(candidate_phis.shape)
-
     for ell in range(i):
         phi = candidate_phis[ell]
-        A_candidates_phis[ell] = compute_attractiveness(i, phi, np.array(nodes), np.array(phis), y)
+        A_candidates_phis[ell] = compute_attractiveness(i, phi, 
+                                                        np.array(nodes).flatten(), 
+                                                        np.array(phis).flatten(), 
+                                                        y)
 
     probs = A_candidates_phis + V
     probs /= np.sum(probs)
 
-    phi_i = np.random.choice(candidate_phis, 1, p=list(probs))
+    phi_i = np.random.choice(candidate_phis, 1, p=list(probs))[0]
     nodes.append(i)
     phis.append(phi_i)
 
