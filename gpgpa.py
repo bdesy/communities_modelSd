@@ -57,17 +57,6 @@ def compute_expected_degree(i, phis, kappas, R, beta, mu):
             expected_k_i += 1./(1 + chi**beta)
     return expected_k_i
 
-# Sets parameters
-
-N = 1000
-y = 2.5
-V = 10.
-R = compute_radius(N)
-beta = 3.
-average_degree = 10.
-
-# Computes angular coordinates from GPA and Guille's algo
-
 @njit
 def get_candidates_and_probs(i, nodes, phis, y, V):
     candidate_phis = np.random.random(size=i)*2*np.pi
@@ -94,79 +83,92 @@ def compute_angular_coordinates_gpa(N, y, V):
         phis.append(phi_i)
     return np.array(phis)
 
-phis = compute_angular_coordinates_gpa(N, y, V)
+if __name__ == "__main__":
+    
+    # Sets parameters
 
-# Displays those angular coordinates
+    N = 1000
+    y = 2.5
+    V = 0.
+    R = compute_radius(N)
+    beta = 3.
+    average_degree = 10.
 
-plt.polar(phis, np.ones(N), 'o', ms=2)
-plt.show()
+    # Computes angular coordinates from GPA and Guille's algo
 
-plt.hist(phis)
-plt.show()
+    phis = compute_angular_coordinates_gpa(N, y, V)
 
-# Computes hidden degrees from Guille's algo
+    # Displays those angular coordinates
 
-degrees='poisson'
+    plt.polar(phis, np.ones(N), 'o', ms=2)
+    plt.show()
 
-if degrees=='power_law':
-    k_0 = (y-2) * average_degree / (y-1)
-    a = y - 1.
-    target_degrees = k_0 / np.random.random_sample(N)**(1./a)
+    plt.hist(phis, bins=120)
+    plt.show()
 
-elif degrees=='poisson':
-    rng = np.random.default_rng()
-    target_degrees = rng.poisson(average_degree, N)
-    print('Poisson hidden degree distribution')
-    print('Minimum degree is {}'.format(np.min(target_degrees)))
+    # Computes hidden degrees from Guille's algo
 
-target_degrees[::-1].sort()
-kappas = np.copy(target_degrees)
-print(average_degree, np.mean(target_degrees))
+    degrees='poisson'
 
-mu = compute_default_mu(beta, np.mean(target_degrees))
-print('mu={}'.format(mu))
+    if degrees=='power_law':
+        k_0 = (y-2) * average_degree / (y-1)
+        a = y - 1.
+        target_degrees = k_0 / np.random.random_sample(N)**(1./a)
 
-tol = 10e-2
-epsilon = 10e-1
-iterations = 0
-max_iterations = 100*N
-while (epsilon > tol) and (iterations<max_iterations):
-    for j in range(N):
-        i = np.random.randint(1,N+1)
-        expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
-        delta = np.random.random()*0.1
-        kappas[i-1] = abs(kappas[i-1] + (target_degrees[i-1]-expected_k_i)*delta)
+    elif degrees=='poisson':
+        rng = np.random.default_rng()
+        target_degrees = rng.poisson(average_degree, N)
+        print('Poisson hidden degree distribution')
+        print('Minimum degree is {}'.format(np.min(target_degrees)))
 
-    deviations = np.zeros(N)
-    expected_degrees = np.zeros(N)
-    for i in range(1, N+1):
-        k_i = target_degrees[i-1]
-        expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
-        expected_degrees[i-1] = expected_k_i
-        epsilon_i =  abs(k_i - expected_k_i)
-        epsilon_i /= k_i
-        deviations[i-1] = epsilon_i
-    epsilon = np.max(deviations)
-    iterations += 1
+    target_degrees[::-1].sort()
+    kappas = np.copy(target_degrees)
+    print(average_degree, np.mean(target_degrees))
 
-if iterations==max_iterations:
-    print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
+    mu = compute_default_mu(beta, np.mean(target_degrees))
+    print('mu={}'.format(mu))
 
-# Plots target degrees and kappas
+    tol = 10e-2
+    epsilon = 10e-1
+    iterations = 0
+    max_iterations = 100*N
+    while (epsilon > tol) and (iterations<max_iterations):
+        for j in range(N):
+            i = np.random.randint(1,N+1)
+            expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
+            delta = np.random.random()*0.1
+            kappas[i-1] = abs(kappas[i-1] + (target_degrees[i-1]-expected_k_i)*delta)
 
-plt.plot(target_degrees, 'o', label='target degrees', c='purple')
-plt.plot(expected_degrees, 'o', label='expected degrees in ensemble', c='darkcyan')
-plt.plot(kappas, '^', label='kappas', c='coral')
-plt.legend()
-plt.show()
+        deviations = np.zeros(N)
+        expected_degrees = np.zeros(N)
+        for i in range(1, N+1):
+            k_i = target_degrees[i-1]
+            expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
+            expected_degrees[i-1] = expected_k_i
+            epsilon_i =  abs(k_i - expected_k_i)
+            epsilon_i /= k_i
+            deviations[i-1] = epsilon_i
+        epsilon = np.max(deviations)
+        iterations += 1
 
-# Saves the output in a format that the C++ code eats
+    if iterations==max_iterations:
+        print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
 
-save=False
+    # Plots target degrees and kappas
 
-if save:
-    vertices = np.array(['v{:05d}'.format(i) for i in range(N)])
-    data = np.column_stack((vertices, kappas, phis))
-    filename = 'graph200_pwl_gpa_S1_hidvar.dat'
-    np.savetxt(filename, data, delimiter='       ', fmt='%s',
-                header='vertex       kappa       theta      mu={}'.format(mu)) 
+    plt.plot(target_degrees, 'o', label='target degrees', c='purple')
+    plt.plot(expected_degrees, 'o', label='expected degrees in ensemble', c='darkcyan')
+    plt.plot(kappas, '^', label='kappas', c='coral')
+    plt.legend()
+    plt.show()
+
+    # Saves the output in a format that the C++ code eats
+
+    save=False
+
+    if save:
+        vertices = np.array(['v{:05d}'.format(i) for i in range(N)])
+        data = np.column_stack((vertices, kappas, phis))
+        filename = 'graph200_pwl_gpa_S1_hidvar.dat'
+        np.savetxt(filename, data, delimiter='       ', fmt='%s',
+                    header='vertex       kappa       theta      mu={}'.format(mu))
