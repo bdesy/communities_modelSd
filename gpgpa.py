@@ -59,7 +59,7 @@ def compute_expected_degree(i, phis, kappas, R, beta, mu):
 
 # Sets parameters
 
-N = 100
+N = 1000
 y = 2.5
 V = 10.
 R = compute_radius(N)
@@ -68,31 +68,40 @@ average_degree = 10.
 
 # Computes angular coordinates from GPA and Guille's algo
 
-nodes = [1]
-phis = [(np.random.random(size=1)*2*np.pi)[0]]
-    
-for i in tqdm(range(2, N+1)):
+@njit
+def get_candidates_and_probs(i, nodes, phis, y, V):
     candidate_phis = np.random.random(size=i)*2*np.pi
     A_candidates_phis = np.zeros(candidate_phis.shape)
     for ell in range(i):
         phi = candidate_phis[ell]
-        A_candidates_phis[ell] = compute_attractiveness(i, phi, 
-                                                        np.array(nodes).flatten(), 
-                                                        np.array(phis).flatten(), 
-                                                        y)
-
+        A_candidates_phis[ell] = compute_attractiveness(i, phi, nodes, phis, y)
     probs = A_candidates_phis + V
     probs /= np.sum(probs)
+    return candidate_phis, probs
 
-    phi_i = np.random.choice(candidate_phis, 1, p=list(probs))[0]
-    nodes.append(i)
-    phis.append(phi_i)
 
-phis = np.array(phis)
+def compute_angular_coordinates_gpa(N, y, V):
+    nodes = [1]
+    phis = [(np.random.random(size=1)*2*np.pi)[0]]     
+    for i in tqdm(range(2, N+1)):
+        candidate_phis, probs = get_candidates_and_probs(i, 
+                                                        np.array(nodes).flatten(), 
+                                                        np.array(phis).flatten(), 
+                                                        y, 
+                                                        V)
+        phi_i = np.random.choice(candidate_phis, 1, p=list(probs))[0]
+        nodes.append(i)
+        phis.append(phi_i)
+    return np.array(phis)
+
+phis = compute_angular_coordinates_gpa(N, y, V)
 
 # Displays those angular coordinates
 
 plt.polar(phis, np.ones(N), 'o', ms=2)
+plt.show()
+
+plt.hist(phis)
 plt.show()
 
 # Computes hidden degrees from Guille's algo
@@ -116,8 +125,6 @@ print(average_degree, np.mean(target_degrees))
 
 mu = compute_default_mu(beta, np.mean(target_degrees))
 print('mu={}'.format(mu))
-
-print(kappas)
 
 tol = 10e-2
 epsilon = 10e-1
