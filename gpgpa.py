@@ -45,6 +45,7 @@ def compute_attractiveness(i, phi, placed_nodes, placed_phis, y):
         lhs[j] = compute_angular_distance(phi, placed_phis[j])
     return np.sum(np.where(lhs < rhs, 1, 0))
 
+@njit
 def compute_expected_degree(i, phis, kappas, R, beta, mu):
     phi_i = phis[i-1]
     kappa_i = kappas[i-1]
@@ -87,6 +88,8 @@ for i in tqdm(range(2, N+1)):
     nodes.append(i)
     phis.append(phi_i)
 
+phis = np.array(phis)
+
 # Displays those angular coordinates
 
 plt.polar(phis, np.ones(N), 'o', ms=2)
@@ -114,10 +117,12 @@ print(average_degree, np.mean(target_degrees))
 mu = compute_default_mu(beta, np.mean(target_degrees))
 print('mu={}'.format(mu))
 
+print(kappas)
+
 tol = 10e-2
 epsilon = 10e-1
 iterations = 0
-max_iterations = 10*N
+max_iterations = 100*N
 while (epsilon > tol) and (iterations<max_iterations):
     for j in range(N):
         i = np.random.randint(1,N+1)
@@ -150,8 +155,11 @@ plt.show()
 
 # Saves the output in a format that the C++ code eats
 
-vertices = np.array(['v{:05d}'.format(i) for i in range(N)])
-data = np.column_stack((vertices, kappas, phis))
-filename = 'graph200_pwl_gpa_S1_hidvar.dat'
-np.savetxt(filename, data, delimiter='       ', fmt='%s',
-            header='vertex       kappa       theta      mu={}'.format(mu)) 
+save=False
+
+if save:
+    vertices = np.array(['v{:05d}'.format(i) for i in range(N)])
+    data = np.column_stack((vertices, kappas, phis))
+    filename = 'graph200_pwl_gpa_S1_hidvar.dat'
+    np.savetxt(filename, data, delimiter='       ', fmt='%s',
+                header='vertex       kappa       theta      mu={}'.format(mu)) 
