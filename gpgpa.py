@@ -62,8 +62,8 @@ N = 100
 y = 2.5
 V = 10.
 R = compute_radius(N)
-beta = 8.
-average_degree = 3.
+beta = 3.
+average_degree = 10.
 
 # Computes angular coordinates from GPA and Guille's algo
 
@@ -89,14 +89,24 @@ for i in tqdm(range(2, N+1)):
 
 # Displays those angular coordinates
 
-plt.polar(phis, np.ones(N), 'o')
+plt.polar(phis, np.ones(N), 'o', ms=2)
 plt.show()
 
 # Computes hidden degrees from Guille's algo
 
-k_0 = (y-2) * average_degree / (y-1)
-a = y - 1.
-target_degrees = k_0 / np.random.random_sample(N)**(1./a)
+degrees='poisson'
+
+if degrees=='power_law':
+    k_0 = (y-2) * average_degree / (y-1)
+    a = y - 1.
+    target_degrees = k_0 / np.random.random_sample(N)**(1./a)
+
+elif degrees=='poisson':
+    rng = np.random.default_rng()
+    target_degrees = rng.poisson(average_degree, N)
+    print('Poisson hidden degree distribution')
+    print('Minimum degree is {}'.format(np.min(target_degrees)))
+
 target_degrees[::-1].sort()
 kappas = np.copy(target_degrees)
 print(average_degree, np.mean(target_degrees))
@@ -132,9 +142,9 @@ if iterations==max_iterations:
 
 # Plots target degrees and kappas
 
-plt.plot(target_degrees, label='target degrees')
-plt.plot(expected_degrees, label='expected degrees in ensemble')
-plt.plot(kappas, label='kappas')
+plt.plot(target_degrees, 'o', label='target degrees', c='purple')
+plt.plot(expected_degrees, 'o', label='expected degrees in ensemble', c='darkcyan')
+plt.plot(kappas, '^', label='kappas', c='coral')
 plt.legend()
 plt.show()
 
