@@ -58,27 +58,28 @@ def compute_expected_degree(i, phis, kappas, R, beta, mu):
     return expected_k_i
 
 @njit
-def get_candidates_and_probs(i, nodes, phis, y, V):
-    candidate_phis = np.random.random(size=i)*2*np.pi
-    A_candidates_phis = np.zeros(candidate_phis.shape)
+def get_candidates_probs(i, nodes, phis, y, V, candidates_phis):
+    A_candidates_phis = np.zeros(candidates_phis.shape)
     for ell in range(i):
-        phi = candidate_phis[ell]
+        phi = candidates_phis[ell]
         A_candidates_phis[ell] = compute_attractiveness(i, phi, nodes, phis, y)
     probs = A_candidates_phis + V + 1e-8 #epsilon to avoid the case where all A = 0
     probs /= np.sum(probs)
-    return candidate_phis, probs
+    return probs
 
 
-def compute_angular_coordinates_gpa(N, y, V):
+def compute_angular_coordinates_gpa(N, y, V, rng):
     nodes = [1]
-    phis = [(np.random.random(size=1)*2*np.pi)[0]]     
+    phis = [(rng.random(size=1)*2*np.pi)[0]]     
     for i in tqdm(range(2, N+1)):
-        candidate_phis, probs = get_candidates_and_probs(i, 
-                                                        np.array(nodes).flatten(), 
-                                                        np.array(phis).flatten(), 
-                                                        y, 
-                                                        V)
-        phi_i = np.random.choice(candidate_phis, 1, p=list(probs))[0]
+        candidates_phis = rng.random(size=i)*2*np.pi
+        probs = get_candidates_probs(i, 
+                                    np.array(nodes).flatten(), 
+                                    np.array(phis).flatten(), 
+                                    y, 
+                                    V, 
+                                    candidates_phis)
+        phi_i = rng.choice(candidates_phis, 1, p=list(probs))[0]
         nodes.append(i)
         phis.append(phi_i)
     return np.array(phis)
@@ -87,7 +88,7 @@ if __name__ == "__main__":
     
     # Sets parameters
 
-    N = 1000
+    N = 100
     y = 2.5
     V = 0.
     R = compute_radius(N)
@@ -95,8 +96,8 @@ if __name__ == "__main__":
     average_degree = 10.
 
     # Computes angular coordinates from GPA and Guille's algo
-
-    phis = compute_angular_coordinates_gpa(N, y, V)
+    rng = np.random.default_rng(10)
+    phis = compute_angular_coordinates_gpa(N, y, V, rng)
 
     # Displays those angular coordinates
 
