@@ -64,7 +64,7 @@ def get_candidates_and_probs(i, nodes, phis, y, V):
     for ell in range(i):
         phi = candidate_phis[ell]
         A_candidates_phis[ell] = compute_attractiveness(i, phi, nodes, phis, y)
-    probs = A_candidates_phis + V
+    probs = A_candidates_phis + V + 1e-8 #epsilon to avoid the case where all A = 0
     probs /= np.sum(probs)
     return candidate_phis, probs
 
