@@ -84,6 +84,7 @@ def compute_angular_coordinates_gpa(N, y, V, rng):
         phis.append(phi_i)
     return np.array(phis)
 
+
 def get_target_degree_sequence(average_degree, N, rng, dist='poisson', sorted=True, **kwargs):
     if dist=='power_law':
         k_0 = (y-2) * average_degree / (y-1)
@@ -97,12 +98,38 @@ def get_target_degree_sequence(average_degree, N, rng, dist='poisson', sorted=Tr
     
     return (target_degrees).astype(float)
 
+@njit
+def compute_all_expected_degrees(N, phis, kappas, R, beta, mu):
+    expected_degrees = np.zeros(N)
+    for i in range(1, N+1):
+        expected_degrees[i-1] = compute_expected_degree(i, phis, kappas, R, beta, mu)
+    return expected_degrees
+
+
+def optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees):
+    epsilon = tol+1.
+    iterations = 0
+    while (epsilon > tol) and (iterations<max_iterations):
+        for j in range(N):
+            i = rng.integers(1,N+1)
+            expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
+            delta = rng.random()*0.1
+            kappas[i-1] = abs(kappas[i-1] + (target_degrees[i-1]-expected_k_i)*delta)
+
+        expected_degrees = compute_all_expected_degrees(N, phis, kappas, R, beta, mu)
+        deviations = abs(target_degrees-expected_degrees)/target_degrees
+        epsilon = np.max(deviations)
+        iterations += 1
+
+    if iterations==max_iterations:
+        print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
+    return kappas
 
 if __name__ == "__main__":
     
     # Sets parameters
 
-    N = 100
+    N = 500
     y = 2.5
     V = 0.
     R = compute_radius(N)
@@ -136,7 +163,7 @@ if __name__ == "__main__":
     print('mu={}'.format(mu))
 
     tol = 10e-2
-    epsilon = 10e-1
+    '''epsilon = 10e-1
     iterations = 0
     max_iterations = 100*N
     while (epsilon > tol) and (iterations<max_iterations):
@@ -146,26 +173,24 @@ if __name__ == "__main__":
             delta = rng.random()*0.1
             kappas[i-1] = abs(kappas[i-1] + (target_degrees[i-1]-expected_k_i)*delta)
 
-        deviations = np.zeros(N)
-        expected_degrees = np.zeros(N)
-        for i in range(1, N+1):
-            k_i = target_degrees[i-1]
-            expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
-            expected_degrees[i-1] = expected_k_i
-            epsilon_i =  abs(k_i - expected_k_i)
-            epsilon_i /= k_i
-            deviations[i-1] = epsilon_i
+        expected_degrees = compute_all_expected_degrees(N, phis, kappas, R, beta, mu)
+        deviations = abs(target_degrees-expected_degrees)/target_degrees
         epsilon = np.max(deviations)
         iterations += 1
 
     if iterations==max_iterations:
         print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
+    '''
+
+    max_iterations = 100*N
+    kappas_opt = optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees)
+    expected_degrees = compute_all_expected_degrees(N, phis, kappas_opt, R, beta, mu)
 
     # Plots target degrees and kappas
 
     plt.plot(target_degrees, 'o', label='target degrees', c='purple')
     plt.plot(expected_degrees, 'o', label='expected degrees in ensemble', c='darkcyan')
-    plt.plot(kappas, '^', label='kappas', c='coral')
+    plt.plot(kappas_opt, '^', label='kappas', c='coral')
     plt.legend()
     plt.show()
 
