@@ -84,6 +84,20 @@ def compute_angular_coordinates_gpa(N, y, V, rng):
         phis.append(phi_i)
     return np.array(phis)
 
+def get_target_degree_sequence(average_degree, N, rng, dist='poisson', sorted=True, **kwargs):
+    if dist=='power_law':
+        k_0 = (y-2) * average_degree / (y-1)
+        a = y - 1.
+        target_degrees = k_0 / rng.random_sample(N)**(1./a)
+    elif dist=='poisson':
+        target_degrees = rng.poisson(average_degree, N)
+    
+    if sorted:
+        target_degrees[::-1].sort()  
+    
+    return (target_degrees).astype(float)
+
+
 if __name__ == "__main__":
     
     # Sets parameters
@@ -96,7 +110,7 @@ if __name__ == "__main__":
     average_degree = 10.
 
     # Computes angular coordinates from GPA and Guille's algo
-    rng = np.random.default_rng(10)
+    rng = np.random.default_rng(12)
     phis = compute_angular_coordinates_gpa(N, y, V, rng)
 
     # Displays those angular coordinates
@@ -109,22 +123,14 @@ if __name__ == "__main__":
 
     # Computes hidden degrees from Guille's algo
 
-    degrees='poisson'
-
-    if degrees=='power_law':
-        k_0 = (y-2) * average_degree / (y-1)
-        a = y - 1.
-        target_degrees = k_0 / np.random.random_sample(N)**(1./a)
-
-    elif degrees=='poisson':
-        rng = np.random.default_rng()
-        target_degrees = rng.poisson(average_degree, N)
-        print('Poisson hidden degree distribution')
-        print('Minimum degree is {}'.format(np.min(target_degrees)))
-
-    target_degrees[::-1].sort()
+    target_degrees = get_target_degree_sequence(average_degree, 
+                                                N, 
+                                                rng, 
+                                                dist='poisson', 
+                                                sorted=True)
+    print(np.min(target_degrees), 'min target degree')
+    
     kappas = np.copy(target_degrees)
-    print(average_degree, np.mean(target_degrees))
 
     mu = compute_default_mu(beta, np.mean(target_degrees))
     print('mu={}'.format(mu))
@@ -135,9 +141,9 @@ if __name__ == "__main__":
     max_iterations = 100*N
     while (epsilon > tol) and (iterations<max_iterations):
         for j in range(N):
-            i = np.random.randint(1,N+1)
+            i = rng.integers(1,N+1)
             expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
-            delta = np.random.random()*0.1
+            delta = rng.random()*0.1
             kappas[i-1] = abs(kappas[i-1] + (target_degrees[i-1]-expected_k_i)*delta)
 
         deviations = np.zeros(N)
