@@ -16,12 +16,12 @@ import subprocess
 
 if __name__ == "__main__":
 	# Sets variables
-	path_to_kappa = 'graph200_pwl_gpa_S1_hidvar.dat'
+	path_to_hidvar = 'graph200_pwl_gpa_S1_hidvar.dat'
 	D=1
 	beta=8.
 	# Loads hidden variables
-	kappa = (np.loadtxt(path_to_kappa, dtype=np.str).T[1]).astype('float')
-	thetas = (np.loadtxt(path_to_kappa, dtype=np.str).T[2]).astype('float')
+	kappa = (np.loadtxt(path_to_hidvar, dtype=np.str).T[1]).astype('float')
+	thetas = (np.loadtxt(path_to_hidvar, dtype=np.str).T[2]).astype('float')
 	# Computes average kappa
 	average_kappa = np.mean(kappa)
 	print(average_kappa)

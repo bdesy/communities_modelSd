@@ -129,7 +129,7 @@ if __name__ == "__main__":
     
     # Sets parameters
 
-    N = 500
+    N = 1000
     y = 2.5
     V = 0.
     R = compute_radius(N)
@@ -142,10 +142,20 @@ if __name__ == "__main__":
 
     # Displays those angular coordinates
 
+    fig = plt.figure(1)
+    ax = fig.add_subplot(111, projection='polar')
     plt.polar(phis, np.ones(N), 'o', ms=2)
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
     plt.show()
 
-    plt.hist(phis, bins=120)
+
+    plt.hist(phis, bins=120, color='darkcyan')
+    plt.xticks([0, np.pi, 2*np.pi], ['0', r'$\pi$', r'2$\pi$'])
+    plt.ylabel('Nombre de noeuds', fontsize=20)
+    plt.xlabel('Angle', fontsize=20)
+    plt.xlim(0, 2*np.pi)
+    plt.ylim(0, 100)
     plt.show()
 
     # Computes hidden degrees from Guille's algo
@@ -159,30 +169,12 @@ if __name__ == "__main__":
     
     kappas = np.copy(target_degrees)
 
+    # Set parameters for kappas optimization
+
     mu = compute_default_mu(beta, np.mean(target_degrees))
-    print('mu={}'.format(mu))
-
     tol = 10e-2
-    '''epsilon = 10e-1
-    iterations = 0
     max_iterations = 100*N
-    while (epsilon > tol) and (iterations<max_iterations):
-        for j in range(N):
-            i = rng.integers(1,N+1)
-            expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
-            delta = rng.random()*0.1
-            kappas[i-1] = abs(kappas[i-1] + (target_degrees[i-1]-expected_k_i)*delta)
 
-        expected_degrees = compute_all_expected_degrees(N, phis, kappas, R, beta, mu)
-        deviations = abs(target_degrees-expected_degrees)/target_degrees
-        epsilon = np.max(deviations)
-        iterations += 1
-
-    if iterations==max_iterations:
-        print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
-    '''
-
-    max_iterations = 100*N
     kappas_opt = optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees)
     expected_degrees = compute_all_expected_degrees(N, phis, kappas_opt, R, beta, mu)
 
@@ -196,11 +188,11 @@ if __name__ == "__main__":
 
     # Saves the output in a format that the C++ code eats
 
-    save=False
+    save=True
 
     if save:
         vertices = np.array(['v{:05d}'.format(i) for i in range(N)])
         data = np.column_stack((vertices, kappas, phis))
-        filename = 'graph200_pwl_gpa_S1_hidvar.dat'
+        filename = 'graph1000_poisson_gpa_S1_hidvar.dat'
         np.savetxt(filename, data, delimiter='       ', fmt='%s',
                     header='vertex       kappa       theta      mu={}'.format(mu))
