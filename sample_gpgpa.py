@@ -16,21 +16,21 @@ import subprocess
 
 if __name__ == "__main__":
 	# Sets variables
-	path_to_hidvar = 'graph200_pwl_gpa_S1_hidvar.dat'
+	path_to_hidvar = 'data/graph1000_poisson_gpa_S1_hidvar.dat'
 	D=1
-	beta=8.
+	beta=3.
 	# Loads hidden variables
-	kappa = (np.loadtxt(path_to_hidvar, dtype=np.str).T[1]).astype('float')
-	thetas = (np.loadtxt(path_to_hidvar, dtype=np.str).T[2]).astype('float')
+	kappa = (np.loadtxt(path_to_hidvar, dtype=str).T[1]).astype('float')
+	thetas = (np.loadtxt(path_to_hidvar, dtype=str).T[2]).astype('float')
 	# Computes average kappa
 	average_kappa = np.mean(kappa)
 	print(average_kappa)
 	# Sets initial value for mu
-	mu = 0.16623438203398708
+	mu = 0.0421204717903987
 	# Compiles the cpp code
-	p = subprocess.Popen(['g++', '-O3', '-std=c++11', 'modelSD/examples/generate_edgelist_from_modelSD.cpp', '-o', 'generate_edgelist_from_modelSD']) 
+	p = subprocess.Popen(['g++', '-O3', '-std=c++11', 'geometric_Sd_model/examples/generate_edgelist_from_modelSD.cpp', '-o', 'generate_edgelist_from_modelSD']) 
 
-	pg = subprocess.Popen(['./generate_edgelist_from_modelSD', '-n', '-d', str(D), '-t', '-b', str(beta), path_to_kappa])
+	pg = subprocess.Popen(['./generate_edgelist_from_modelSD', '-n', '-d', str(D), '-t', '-b', str(beta), path_to_hidvar])
 	pg.wait()
 
 
