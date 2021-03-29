@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
     if save:
         vertices = np.array(['v{:05d}'.format(i) for i in range(N)])
-        data = np.column_stack((vertices, kappas, phis))
+        data = np.column_stack((vertices, kappas, phis, target_degrees))
         filename = 'graph1000_poisson_gpa_S1_hidvar.dat'
         np.savetxt(filename, data, delimiter='       ', fmt='%s',
                     header='vertex       kappa       theta      mu={}'.format(mu))
