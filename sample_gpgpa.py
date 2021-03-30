@@ -29,7 +29,7 @@ if __name__ == "__main__":
 	mu = 0.0421204717903987
 	# Compiles the cpp code
 	p = subprocess.Popen(['g++', '-O3', '-std=c++11', 'geometric_Sd_model/examples/generate_edgelist_from_modelSD.cpp', '-o', 'generate_edgelist_from_modelSD']) 
-
+	p.wait()
 	pg = subprocess.Popen(['./generate_edgelist_from_modelSD', '-n', '-d', str(D), '-t', '-b', str(beta), path_to_hidvar])
 	pg.wait()
 
