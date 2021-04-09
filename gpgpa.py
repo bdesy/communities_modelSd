@@ -128,14 +128,27 @@ def optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, targ
 
 if __name__ == "__main__":
     
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--filename', '-f', type=str, default='hidvar',
+                        help='path to save the hidden variable file')
+    parser.add_argument('--size', '-N', type=int, default=1000, 
+                        help='number of nodes')
+    parser.add_argument('--beta', '-b', type=float, default=3.,
+                        help='value of beta parameter')
+    parser.add_argument('--average_degree', '-k', type=float, default=10.,
+                        help='average degree of the target degree sequence')
+    parser.add_argument('--Lambda', '-V', type=float, 
+                        help='attractiveness parameter')
+    args = parser.parse_args()
+
     # Sets parameters
 
-    N = 1000
+    N = args.size
     y = 2.5
-    V = 0.
+    V = args.Lambda
     R = compute_radius(N)
-    beta = 3.
-    average_degree = 10.
+    beta = args.beta
+    average_degree = args.average_degree
 
     # Computes angular coordinates from GPA and Guille's algo
     seed = 120
@@ -143,14 +156,6 @@ if __name__ == "__main__":
     phis = compute_angular_coordinates_gpa(N, y, V, rng)
 
     # Displays those angular coordinates
-
-    fig = plt.figure(1)
-    ax = fig.add_subplot(111, projection='polar')
-    plt.polar(phis, np.ones(N), 'o', ms=2)
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
-    plt.show()
-
 
     plt.hist(phis, bins=120, color='darkcyan')
     plt.xticks([0, np.pi, 2*np.pi], ['0', r'$\pi$', r'2$\pi$'])
@@ -167,8 +172,7 @@ if __name__ == "__main__":
                                                 rng, 
                                                 dist='poisson', 
                                                 sorted=True)
-    print(np.min(target_degrees), 'min target degree')
-    
+
     kappas = np.copy(target_degrees)
 
     # Set parameters for kappas optimization
@@ -182,8 +186,8 @@ if __name__ == "__main__":
 
     # Plots target degrees and kappas
 
-    plt.plot(target_degrees, 'o', label='target degrees', c='purple')
-    plt.plot(expected_degrees, 'o', label='expected degrees in ensemble', c='darkcyan')
+    plt.plot(target_degrees, 'o', label='target degrees', c='purple', ms=7)
+    plt.plot(expected_degrees, 'o', label='expected degrees in ensemble', c='darkcyan', ms=3)
     plt.plot(kappas_opt, '^', label='kappas', c='coral')
     plt.legend()
     plt.show()
@@ -195,6 +199,11 @@ if __name__ == "__main__":
     if save:
         vertices = np.array(['v{:05d}'.format(i) for i in range(N)])
         data = np.column_stack((vertices, kappas, phis, target_degrees))
-        filename = 'graph1000_poisson_gpa_S1_hidvar_s{}.dat'.format(seed)
-        np.savetxt(filename, data, delimiter='       ', fmt='%s',
-                    header='vertex       kappa       theta      mu={}'.format(mu))
+        filename = args.filename+'_s{}'.format(seed)
+        np.savetxt(filename+'.dat', data, delimiter='       ', fmt='%s',
+                    header='vertex       kappa       theta      target degree')
+
+        params = {'mu':mu, 'beta':beta}
+        params_file = open(filename+'_params.txt', 'a')
+        params_file.write(str(params))
+        params_file.close()
