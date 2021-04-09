@@ -10,11 +10,15 @@ Date : 29/04/2021
 """
 
 import argparse
+import matplotlib
 import numpy as np
 import networkx as nx
 from infomap import Infomap
 import matplotlib.pyplot as plt
 import community as community_louvain
+
+matplotlib.rc('xtick', labelsize=20) 
+matplotlib.rc('ytick', labelsize=20) 
 
 # Define sub-recipes
 
@@ -36,7 +40,7 @@ def get_edge_coordinates(edge, G, kappa_0, R_hat):
     return thetas, rs
 '''
 
-# Par input parameters
+# Parse input parameters
 
 parser = argparse.ArgumentParser()
 
@@ -101,9 +105,11 @@ elif args.community=='infomap':
         partition[node] = partition_im[node_int]
 
 # Create color dictionnary
-
+print(len(set(partition.values())))
 color_list=['teal', 'coral', 'limegreen', 'crimson', 'midnightblue', 'turquoise', 'plum', 'darkorchid', 'indigo', 'darkslategrey', 
-            'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown']
+            'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown', 'teal', 'coral', 'limegreen', 'crimson', 'midnightblue',
+             'turquoise', 'plum', 'darkorchid', 'indigo', 'darkslategrey', 
+            'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown',]
 
 colors = {}
 for comm in set(partition.values()):
@@ -117,18 +123,20 @@ ax = plt.subplot(111, projection='polar')
 for edge in G.edges():
     n1, n2 = edge
     theta, r = [thetas[n1], thetas[n2]], [radiuses[n1], radiuses[n2]]
-    ax.plot(theta, r, c='k', linewidth=0.5, alpha=0.2)
+    ax.plot(theta, r, c='k', linewidth=0.5, alpha=0.4)
 
-ax.plot(thetas.values(), radiuses.values(), 'o', ms=3, c='white')
+#ax.plot(thetas.values(), radiuses.values(), 'o', ms=12, c='white')
 for node in G.nodes():
     community = partition[node]
     color = colors[community]
-    ax.plot(thetas[node], radiuses[node], 'o', ms=2, c=color)
+    ax.plot(thetas[node], radiuses[node], 'o', ms=10, c='white')
+    ax.plot(thetas[node], radiuses[node], 'o', ms=8, c=color)
 
-ax.set_xticks([])
+#ax.set_xticks([])
 ax.set_yticks([])
-ax.grid(False)
-ax.spines['polar'].set_visible(False)
+#ax.grid(False)
+#ax.spines['polar'].set_visible(False)
 ax.set_ylim(np.min(radiuses_array)/2, np.max(radiuses_array))
 plt.tight_layout()
+plt.savefig('fig1_'+args.community, dpi=600)
 plt.show()
