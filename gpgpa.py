@@ -139,6 +139,8 @@ if __name__ == "__main__":
                         help='average degree of the target degree sequence')
     parser.add_argument('--Lambda', '-V', type=float, 
                         help='attractiveness parameter')
+    parser.add_argument('--random_seed', '-s', type=int, 
+                        help='random seed for the RNG')
     args = parser.parse_args()
 
     # Sets parameters
@@ -151,7 +153,7 @@ if __name__ == "__main__":
     average_degree = args.average_degree
 
     # Computes angular coordinates from GPA and Guille's algo
-    seed = 120
+    seed = args.random_seed
     rng = np.random.default_rng(seed)
     phis = compute_angular_coordinates_gpa(N, y, V, rng)
 
@@ -189,6 +191,8 @@ if __name__ == "__main__":
     plt.plot(target_degrees, 'o', label='target degrees', c='purple', ms=7)
     plt.plot(expected_degrees, 'o', label='expected degrees in ensemble', c='darkcyan', ms=3)
     plt.plot(kappas_opt, '^', label='kappas', c='coral')
+    plt.xlabel('Node')
+    plt.ylabel('Value')
     plt.legend()
     plt.show()
 
