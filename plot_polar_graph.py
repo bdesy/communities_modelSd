@@ -17,28 +17,10 @@ from infomap import Infomap
 import matplotlib.pyplot as plt
 import community as community_louvain
 
-matplotlib.rc('xtick', labelsize=20) 
-matplotlib.rc('ytick', labelsize=20) 
-
 # Define sub-recipes
 
 def compute_radius(kappa, kappa_0, R_hat):
     return R_hat - 2*np.log(kappa/kappa_0)
-'''
-def get_node_coordinates(node, G, kappa_0, R_hat):
-    theta = G.nodes(data=True)[node]['angle0']
-    kappa = G.nodes(data=True)[node]['kappa']
-    r = compute_radius(kappa, kappa_0, R_hat)
-    return theta, r
-
-def get_edge_coordinates(edge, G, kappa_0, R_hat):
-    v1, v2 = edge
-    theta1, r1 = get_node_coordinates(v1, G, kappa_0, R_hat)
-    theta2, r2 = get_node_coordinates(v2, G, kappa_0, R_hat)
-    thetas = [theta1, theta2]
-    rs = [r1, r2]
-    return thetas, rs
-'''
 
 # Parse input parameters
 
@@ -48,6 +30,8 @@ parser.add_argument('--path', '-p', type=str,
                     help='path to the graph xml file')
 parser.add_argument('--community', '-c', type=str,
                     help='community detection algorithm to use')
+parser.add_argument('--mode', '-m', type=str, default='normal',
+                    help='optional presentation mode for bigger stuff')
 args = parser.parse_args()
 
 # Load graph data and parameters
@@ -115,6 +99,16 @@ colors = {}
 for comm in set(partition.values()):
     colors[comm] = color_list[comm]
 
+# Set plotting sizes
+if args.mode=='normal':
+    matplotlib.rc('xtick', labelsize=14) 
+    matplotlib.rc('ytick', labelsize=14) 
+    ms=[5,3]
+elif args.mode=='presentation':
+    matplotlib.rc('xtick', labelsize=20) 
+    matplotlib.rc('ytick', labelsize=20) 
+    ms=[10,8]
+
 # Plot figure
 
 plt.figure(figsize=(8,8))
@@ -125,14 +119,14 @@ for edge in G.edges():
     theta, r = [thetas[n1], thetas[n2]], [radiuses[n1], radiuses[n2]]
     ax.plot(theta, r, c='k', linewidth=0.5, alpha=0.4)
 
-#ax.plot(thetas.values(), radiuses.values(), 'o', ms=12, c='white')
 for node in G.nodes():
     community = partition[node]
     color = colors[community]
-    ax.plot(thetas[node], radiuses[node], 'o', ms=10, c='white')
-    ax.plot(thetas[node], radiuses[node], 'o', ms=8, c=color)
+    ax.plot(thetas[node], radiuses[node], 'o', ms=ms[0], c='white')
+    ax.plot(thetas[node], radiuses[node], 'o', ms=ms[1], c=color)
 
-#ax.set_xticks([])
+ax.set_xticks([0, np.pi/2, np.pi, 3*np.pi/2])
+ax.set_xticklabels(['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$'])
 ax.set_yticks([])
 #ax.grid(False)
 #ax.spines['polar'].set_visible(False)
