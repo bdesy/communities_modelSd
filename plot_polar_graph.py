@@ -28,7 +28,7 @@ parser = argparse.ArgumentParser()
 
 parser.add_argument('--path', '-p', type=str,
                     help='path to the graph xml file')
-parser.add_argument('--community', '-c', type=str,
+parser.add_argument('--community', '-c', type=str, choices=['louvain', 'infomap', 'SBM'],
                     help='community detection algorithm to use')
 parser.add_argument('--mode', '-m', type=str, default='normal',
                     help='optional presentation mode for bigger stuff')
@@ -87,11 +87,24 @@ elif args.community=='infomap':
     for node_int in partition_im:
         node = 'n{}'.format(node_int)
         partition[node] = partition_im[node_int]
+elif args.community=='SBM':
+    import graph_tool.all as gt
+    g = gt.load_graph(args.path)
+    state = gt.minimize_blockmodel_dl(g)
+    partition_sbm = state.get_blocks()
+    partition = {}
+    for i in range(N):
+        node = 'n{}'.format(i)
+        partition[node] = partition_sbm[i]
+
+
 
 # Create color dictionnary
 print(len(set(partition.values())))
 color_list=['teal', 'coral', 'limegreen', 'crimson', 'midnightblue', 'turquoise', 'plum', 'darkorchid', 'indigo', 'darkslategrey', 
             'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown', 'teal', 'coral', 'limegreen', 'crimson', 'midnightblue',
+             'turquoise', 'plum', 'darkorchid', 'indigo', 'darkslategrey', 
+            'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown',
              'turquoise', 'plum', 'darkorchid', 'indigo', 'darkslategrey', 
             'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown',]
 
