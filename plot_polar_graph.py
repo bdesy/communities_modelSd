@@ -15,6 +15,7 @@ import numpy as np
 import networkx as nx
 from infomap import Infomap
 import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
 import community as community_louvain
 
 # Define sub-recipes
@@ -26,17 +27,19 @@ def compute_radius(kappa, kappa_0, R_hat):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--path', '-p', type=str,
+parser.add_argument('--filepath', '-f', type=str,
                     help='path to the graph xml file')
 parser.add_argument('--community', '-c', type=str, choices=['louvain', 'infomap', 'SBM'],
                     help='community detection algorithm to use')
 parser.add_argument('--mode', '-m', type=str, default='normal',
                     help='optional presentation mode for bigger stuff')
+parser.add_argument('--density', '-d', type=bool, default=True,
+                    help='to turn off angular density plot on the circumference')
 args = parser.parse_args()
 
 # Load graph data and parameters
 
-G = nx.read_graphml(args.path)
+G = nx.read_graphml(args.filepath)
 #G = nx.read_graphml('data/graph1000_poisson_gpa_S1_hidvar.xml')
 
 path_to_hidvars = G.graph['hidden_variables_file']
@@ -89,7 +92,7 @@ elif args.community=='infomap':
         partition[node] = partition_im[node_int]
 elif args.community=='SBM':
     import graph_tool.all as gt
-    g = gt.load_graph(args.path)
+    g = gt.load_graph(args.filepath)
     state = gt.minimize_blockmodel_dl(g)
     partition_sbm = state.get_blocks()
     partition = {}
@@ -124,7 +127,7 @@ elif args.mode=='presentation':
 
 # Plot figure
 
-plt.figure(figsize=(8,8))
+plt.figure(figsize=(6,6))
 ax = plt.subplot(111, projection='polar')
 
 for edge in G.edges():
@@ -142,8 +145,22 @@ ax.set_xticks([0, np.pi/2, np.pi, 3*np.pi/2])
 ax.set_xticklabels(['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$'])
 ax.set_yticks([])
 #ax.grid(False)
-#ax.spines['polar'].set_visible(False)
-ax.set_ylim(np.min(radiuses_array)/2, np.max(radiuses_array))
+ax.spines['polar'].set_visible(False)
+#ax.set_ylim(np.min(radiuses_array)/2, np.max(radiuses_array))
+
+
+if args.density:
+    tt = np.linspace(0,2*np.pi, 1000)
+    kde = gaussian_kde(thetas_array, bw_method=0.02)
+    upper = kde(tt)
+    upper /= np.max(upper)
+    upper *= (R_hat*1.1 - R_hat)
+    upper += R_hat
+    lower = np.ones(1000)*R_hat
+    ax.fill_between(tt, lower, upper, alpha=0.3, color='darkcyan')
+    ax.plot(tt, upper, c='darkcyan', linewidth=2)
+
+
 plt.tight_layout()
 plt.savefig('fig1_'+args.community, dpi=600)
 plt.show()
