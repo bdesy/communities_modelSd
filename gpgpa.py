@@ -69,10 +69,13 @@ def get_candidates_probs(i, nodes, phis, y, V, candidates_phis):
     return probs
 
 
-def compute_angular_coordinates_gpa(N, y, V, rng):
+def compute_angular_coordinates_gpa(N, y, V, rng, init=[]):
     nodes = [1]
-    phis = [(rng.random(size=1)*2*np.pi)[0]]     
-    for i in tqdm(range(2, N+1)):
+    if len(init)==0:
+        phis = [(rng.random(size=1)*2*np.pi)[0]]
+    else:
+        phis = init
+    for i in tqdm(range(len(phis)+1, N+1)):
         candidates_phis = rng.random(size=i)*2*np.pi
         probs = get_candidates_probs(i, 
                                     np.array(nodes).flatten(), 
@@ -87,13 +90,15 @@ def compute_angular_coordinates_gpa(N, y, V, rng):
 
 
 def get_target_degree_sequence(average_degree, N, rng, dist='poisson', sorted=True, **kwargs):
-    if dist=='power_law':
+    if dist=='pwl':
         k_0 = (y-2) * average_degree / (y-1)
         a = y - 1.
         target_degrees = k_0 / rng.random_sample(N)**(1./a)
     elif dist=='poisson':
         target_degrees = rng.poisson(average_degree, N)
-    
+    elif dist=='exp':
+        target_degrees = rng.exponential(scale=average_degree-1., size=N)+1.
+        
     if sorted:
         target_degrees[::-1].sort()  
     
@@ -141,6 +146,9 @@ if __name__ == "__main__":
                         help='attractiveness parameter')
     parser.add_argument('--random_seed', '-s', type=int, 
                         help='random seed for the RNG')
+    parser.add_argument('--degree_distribution', '-dd', type=str, default='poisson',
+                        choices=['poisson', 'exp', 'pwl'],
+                        help='target degree distribution shape')
     args = parser.parse_args()
 
     # Sets parameters
@@ -155,7 +163,7 @@ if __name__ == "__main__":
     # Computes angular coordinates from GPA and Guille's algo
     seed = args.random_seed
     rng = np.random.default_rng(seed)
-    phis = compute_angular_coordinates_gpa(N, y, V, rng)
+    phis = compute_angular_coordinates_gpa(N, y, V, rng, init=[0,np.pi])
 
     # Displays those angular coordinates
 
@@ -172,7 +180,7 @@ if __name__ == "__main__":
     target_degrees = get_target_degree_sequence(average_degree, 
                                                 N, 
                                                 rng, 
-                                                dist='poisson', 
+                                                dist=args.degree_distribution, 
                                                 sorted=True)
 
     kappas = np.copy(target_degrees)
