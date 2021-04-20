@@ -28,17 +28,23 @@ if __name__ == "__main__":
 
 	# Sets variables
 	path_to_hidvar = args.path+'.dat'
-	D=1
+
 	file = open(args.path+'_params.txt', 'r')
 	contents = file.read()
 	dictionary = ast.literal_eval(contents)
 	file.close()
 	beta = dictionary['beta']
 	mu = dictionary['mu']
+	D = dictionary['dimension']
 
 	# Loads hidden variables
 	kappa = (np.loadtxt(path_to_hidvar, dtype=str).T[1]).astype('float')
-	thetas = (np.loadtxt(path_to_hidvar, dtype=str).T[2]).astype('float')
+	if D<2.5:
+		coordinates = (np.loadtxt(path_to_hidvar, dtype=str).T[2:2+D]).astype('float')
+	else:
+		coordinates = (np.loadtxt(path_to_hidvar, dtype=str).T[2:3+D]).astype('float')
+
+	print(coordinates.shape)
 
 	# Compiles the cpp code
 	p = subprocess.Popen(['g++', '-O3', '-std=c++11', 'geometric_Sd_model/examples/generate_edgelist_from_modelSD.cpp', '-o', 'generate_edgelist_from_modelSD']) 
