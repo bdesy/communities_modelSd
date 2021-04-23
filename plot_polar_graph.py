@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Plot a network in hyperbolic plane whilst accentuating community structure.
+Plot a network in hyperbolic plane whilst accentuating community structure and node densities.
 
 Author: Béatrice Désy
 
@@ -27,14 +27,16 @@ def compute_radius(kappa, kappa_0, R_hat):
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('--filepath', '-f', type=str,
+parser.add_argument('--filepath', '-p', type=str,
                     help='path to the graph xml file')
 parser.add_argument('--community', '-c', type=str, choices=['louvain', 'infomap', 'SBM'],
                     help='community detection algorithm to use')
 parser.add_argument('--mode', '-m', type=str, default='normal',
                     help='optional presentation mode for bigger stuff')
-parser.add_argument('--density', '-d', type=bool, default=True,
+parser.add_argument('--density', '-d', type=bool, default=False,
                     help='to turn off angular density plot on the circumference')
+parser.add_argument('--save', '-s', type=bool, default=False,
+                    help='to save or not the figure')
 args = parser.parse_args()
 
 # Load graph data and parameters
@@ -127,8 +129,9 @@ elif args.mode=='presentation':
 
 # Plot figure
 
-plt.figure(figsize=(6,6))
-ax = plt.subplot(111, projection='polar')
+fig = plt.figure(figsize=(6,6))
+rect = [0.1, 0.1, 0.8, 0.8]
+ax = fig.add_axes(rect, projection='polar')
 
 for edge in G.edges():
     n1, n2 = edge
@@ -144,13 +147,10 @@ for node in G.nodes():
 ax.set_xticks([0, np.pi/2, np.pi, 3*np.pi/2])
 ax.set_xticklabels(['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$'])
 ax.set_yticks([])
-#ax.grid(False)
 ax.spines['polar'].set_visible(False)
-#ax.set_ylim(np.min(radiuses_array)/2, np.max(radiuses_array))
-
 
 if args.density:
-    tt = np.linspace(0,2*np.pi, 1000)
+    tt = np.linspace(0.001,2*np.pi, 1000)
     kde = gaussian_kde(thetas_array, bw_method=0.02)
     upper = kde(tt)
     upper /= np.max(upper)
@@ -158,9 +158,25 @@ if args.density:
     upper += R_hat
     lower = np.ones(1000)*R_hat
     ax.fill_between(tt, lower, upper, alpha=0.3, color='darkcyan')
-    ax.plot(tt, upper, c='darkcyan', linewidth=2)
+    ax.plot(tt, upper, c='darkcyan', linewidth=1)
 
+    xx = np.linspace(0.01, R_hat, 1000)
+    kde_r = gaussian_kde(radiuses_array, bw_method=0.1)
+    yy = np.array(kde_r(xx))
+    yy = yy/np.max(yy)*R_hat/3
 
-plt.tight_layout()
-plt.savefig('fig1_'+args.community, dpi=600)
+    r_den = np.sqrt(xx**2 + yy**2)
+    th_den = np.arccos(xx / r_den)
+    print(len(th_den), th_den.shape)
+    print(type(r_den), type(xx), type(yy))
+    
+    ax.plot(th_den, r_den, '-', c='darkcyan', ms=0.5)
+    ax.fill_between(th_den, 0, r_den, alpha=0.3, color='darkcyan')
+
+if args.save:
+    plt.savefig('fig1_'+args.community, dpi=600)
+
 plt.show()
+
+
+
