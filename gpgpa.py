@@ -34,7 +34,7 @@ def compute_default_mu(beta, average_kappa, D=1):
     return out
 
 
-@njit
+#@njit
 def compute_angular_distance(coord_i, coord_j, D=1):
     """Computes angular distancce between two points on an hypersphere
 
@@ -94,7 +94,7 @@ def compute_attractiveness(i, phi, placed_nodes, placed_phis, y, D=1):
     return np.sum(np.where(lhs < rhs, 1, 0))
 
 @njit
-def compute_expected_degree(i, phis, kappas, R, beta, mu, D=1):
+def compute_expected_degree(N, i, phis, kappas, R, beta, mu, D=1):
     phi_i = phis[i-1]
     kappa_i = kappas[i-1]
     expected_k_i = 0
@@ -194,24 +194,24 @@ def get_target_degree_sequence(average_degree, N, rng, dist='poisson', sorted=Tr
     return (target_degrees).astype(float)
 
 @njit
-def compute_all_expected_degrees(N, phis, kappas, R, beta, mu):
+def compute_all_expected_degrees(N, phis, kappas, R, beta, mu, D=1):
     expected_degrees = np.zeros(N)
     for i in range(1, N+1):
-        expected_degrees[i-1] = compute_expected_degree(i, phis, kappas, R, beta, mu)
+        expected_degrees[i-1] = compute_expected_degree(N, i, phis, kappas, R, beta, mu, D=D)
     return expected_degrees
 
 
-def optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees):
+def optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees, D=1):
     epsilon = tol+1.
     iterations = 0
     while (epsilon > tol) and (iterations<max_iterations):
         for j in range(N):
             i = rng.integers(1,N+1)
-            expected_k_i = compute_expected_degree(i, phis, kappas, R, beta, mu)
+            expected_k_i = compute_expected_degree(N, i, phis, kappas, R, beta, mu, D=D)
             delta = rng.random()*0.1
             kappas[i-1] = abs(kappas[i-1] + (target_degrees[i-1]-expected_k_i)*delta)
 
-        expected_degrees = compute_all_expected_degrees(N, phis, kappas, R, beta, mu)
+        expected_degrees = compute_all_expected_degrees(N, phis, kappas, R, beta, mu, D=D)
         deviations = abs(target_degrees-expected_degrees)/target_degrees
         epsilon = np.max(deviations)
         iterations += 1
@@ -256,8 +256,8 @@ if __name__ == "__main__":
     seed = args.random_seed
     rng = np.random.default_rng(seed)
 
-    #init = np.array([[0.01,0.],[0.,np.pi]])
-    init=np.array([[0.], [np.pi]])
+    init = np.array([[0.01,0.],[0.,np.pi]])
+    #init=np.array([[0.], [np.pi]])
 
     phis = compute_angular_coordinates_gpa(N, y, V, rng, D=D, init=init)
 
@@ -287,8 +287,8 @@ if __name__ == "__main__":
     tol = 10e-2
     max_iterations = 100*N
 
-    kappas_opt = optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees)
-    expected_degrees = compute_all_expected_degrees(N, phis, kappas_opt, R, beta, mu)
+    kappas_opt = optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees, D=D)
+    expected_degrees = compute_all_expected_degrees(N, phis, kappas_opt, R, beta, mu, D=D)
 
     print(np.mean(expected_degrees), np.min(expected_degrees), np.sum(expected_degrees))
 
