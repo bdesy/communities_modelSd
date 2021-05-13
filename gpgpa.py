@@ -18,46 +18,16 @@ import numpy as np
 from tqdm import tqdm 
 from numba import njit
 from scipy.special import gamma
-
 import matplotlib.pyplot as plt
 
-# Define a few functions
+from truc import *
 
-def compute_radius(N, D=1):
-    R = N * gamma((D+1.)/2.) / 2.
-    R /= np.pi**((D+1.)/2.)
-    return R**(1./D)
+# Define a few functions
 
 def compute_default_mu(beta, average_kappa, D=1):
     out = beta * np.sin(D * np.pi / beta) * gamma(D / 2.)
     out /= (2 * (np.pi**((D/2.)+1.)) * average_kappa)
     return out
-
-
-#@njit
-def compute_angular_distance(coord_i, coord_j, D=1):
-    """Computes angular distancce between two points on an hypersphere
-
-    Parameters
-    ----------
-    coord_i, coord_j : arrays of floats
-        Coordinates of points i and j, (1, D) angular coordinates for D=1, D=2
-        (1, D+1) euclidean coordinates for D>2
-
-    D : int
-        Dimension of the hypersphere in a D+1 euclidean space
-    """
-    if D==1:
-        out = np.pi - abs(np.pi - abs(coord_i[0] - coord_j[0]))
-    elif D==2:
-        out = np.cos(abs(coord_i[0]-coord_j[0]))*np.cos(coord_i[1])*np.cos(coord_j[1])
-        out += np.sin(coord_i[1])*np.sin(coord_j[1])
-        out = np.arccos(out)
-    else:
-        denum = np.linalg.norm(coord_i)*np.linalg.norm(coord_j)
-        out = np.arccos(np.dot(coord_i, coord_j)/denum)
-    return out
-
 
 @njit
 def compute_attractiveness(i, phi, placed_nodes, placed_phis, y, D=1):
@@ -93,17 +63,6 @@ def compute_attractiveness(i, phi, placed_nodes, placed_phis, y, D=1):
         lhs[j] = compute_angular_distance(phi, placed_phis[j], D)
     return np.sum(np.where(lhs < rhs, 1, 0))
 
-@njit
-def compute_expected_degree(N, i, phis, kappas, R, beta, mu, D=1):
-    phi_i = phis[i-1]
-    kappa_i = kappas[i-1]
-    expected_k_i = 0
-    for j in range(N):
-        if j!=(i-1):
-            chi = R * compute_angular_distance(phi_i, phis[j], D)
-            chi /= (mu * kappa_i * kappas[j])
-            expected_k_i += 1./(1 + chi**beta)
-    return expected_k_i
 
 @njit
 def get_candidates_probs(i, nodes, phis, y, V, candidates_phis, D=1):
@@ -114,22 +73,7 @@ def get_candidates_probs(i, nodes, phis, y, V, candidates_phis, D=1):
     probs = A_candidates_phis + V + 1e-8 #epsilon to avoid the case where all A = 0
     probs /= np.sum(probs)
     return probs
-'''
 
-def generate_candidate_coordinates(n, D, rng):
-    candidates_coord = rng.random(size=(n,1))*2*np.pi
-    if D==2: 
-        polar_coord = np.arccos(2 * rng.random(size=(n,1)) - 1)
-        candidates_coord = np.column_stack((candidates_coord, polar_coord))
-    elif D>2.5:
-        candidates_coord = np.zeros((n, D+1))
-        for i in range(n):
-            pos = np.zeros(D+1)
-            while np.linalg.norm(pos) < 1e-4:
-                pos = rng.normal(size=D+1)
-            candidates_coord[i] = pos / np.linalg.norm(pos)
-    return candidates_coord
-'''
 
 @njit
 def choose_random_coordinates_on_hypersphere(n, D, normal_coord):
@@ -145,10 +89,11 @@ def choose_random_coordinates_on_hypersphere(n, D, normal_coord):
     return candidates_coord
 
 def generate_candidate_coordinates(n, D, rng):
-    candidates_coord = rng.random(size=(n,1))*2*np.pi
-    if D==2: 
-        polar_coord = np.arccos(2 * rng.random(size=(n,1)) - 1)
-        candidates_coord = np.column_stack((candidates_coord, polar_coord))
+    if D<2.5:
+        candidates_coord = rng.random(size=(n,1))*2*np.pi
+        if D==2: 
+            polar_coord = np.arccos(2 * rng.random(size=(n,1)) - 1)
+            candidates_coord = np.column_stack((candidates_coord, polar_coord))
     elif D>2.5:
         normal_coord = rng.normal(size=(n+20,D+1))
         candidates_coord = choose_random_coordinates_on_hypersphere(n, D, normal_coord)
@@ -178,48 +123,6 @@ def compute_angular_coordinates_gpa(N, y, V, rng, init=[], D=1):
     return np.array(phis)
 
 
-def get_target_degree_sequence(average_degree, N, rng, dist='poisson', sorted=True, **kwargs):
-    if dist=='pwl':
-        k_0 = (y-2) * average_degree / (y-1)
-        a = y - 1.
-        target_degrees = k_0 / rng.random(N)**(1./a)
-    elif dist=='poisson':
-        target_degrees = rng.poisson(average_degree, N)
-    elif dist=='exp':
-        target_degrees = rng.exponential(scale=average_degree, size=N)
-        
-    if sorted:
-        target_degrees[::-1].sort()  
-    
-    return (target_degrees).astype(float)
-
-@njit
-def compute_all_expected_degrees(N, phis, kappas, R, beta, mu, D=1):
-    expected_degrees = np.zeros(N)
-    for i in range(1, N+1):
-        expected_degrees[i-1] = compute_expected_degree(N, i, phis, kappas, R, beta, mu, D=D)
-    return expected_degrees
-
-
-def optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees, D=1):
-    epsilon = tol+1.
-    iterations = 0
-    while (epsilon > tol) and (iterations<max_iterations):
-        for j in range(N):
-            i = rng.integers(1,N+1)
-            expected_k_i = compute_expected_degree(N, i, phis, kappas, R, beta, mu, D=D)
-            delta = rng.random()*0.1
-            kappas[i-1] = abs(kappas[i-1] + (target_degrees[i-1]-expected_k_i)*delta)
-
-        expected_degrees = compute_all_expected_degrees(N, phis, kappas, R, beta, mu, D=D)
-        deviations = abs(target_degrees-expected_degrees)/target_degrees
-        epsilon = np.max(deviations)
-        iterations += 1
-
-    if iterations==max_iterations:
-        print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
-    return kappas
-
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
@@ -247,15 +150,18 @@ if __name__ == "__main__":
     N = args.size
     y = 2.5
     V = args.Lambda
-    R = compute_radius(N)
     D = args.dimension
     beta = args.beta
     average_degree = args.average_degree
+
+    R = compute_radius(N, D)
 
     # Computes angular coordinates from GPA and Guille's algo
     seed = args.random_seed
     rng = np.random.default_rng(seed)
 
+
+    #init = np.array([[0.01,0.],[np.pi/3,np.pi],[2*np.pi/3,np.pi]])
     init = np.array([[0.01,0.],[0.,np.pi]])
     #init=np.array([[0.], [np.pi]])
 
@@ -279,15 +185,21 @@ if __name__ == "__main__":
                                                 dist=args.degree_distribution, 
                                                 sorted=True)
 
+    print('Mean target degree of {:.2f}'.format(np.mean(target_degrees)))
+
     kappas = np.copy(target_degrees)+1e-3
 
     # Set parameters for kappas optimization
 
     mu = compute_default_mu(beta, np.mean(target_degrees))
-    tol = 10e-2
-    max_iterations = 100*N
-
-    kappas_opt = optimize_kappas(N, tol, max_iterations, rng, phis, kappas, R, beta, mu, target_degrees, D=D)
+    tol = 10e-3
+    max_iterations = 10*N
+    print('optimizing kappas')
+    kappas_opt = optimize_kappas(N, tol, max_iterations, 
+                                                phis, kappas, 
+                                                R, beta, mu, 
+                                                target_degrees, rng,
+                                                D=D, verbose=True)
     expected_degrees = compute_all_expected_degrees(N, phis, kappas_opt, R, beta, mu, D=D)
 
     print(np.mean(expected_degrees), np.min(expected_degrees), np.sum(expected_degrees))
@@ -325,7 +237,7 @@ if __name__ == "__main__":
         np.savetxt(filename+'.dat', data, delimiter='       ', fmt='%s',
                     header=header)
 
-        params = {'mu':mu, 'beta':beta, 'dimension':D}
+        params = {'mu':mu, 'beta':beta, 'dimension':D, 'radius':R}
         params_file = open(filename+'_params.txt', 'a')
         params_file.write(str(params))
         params_file.close()
