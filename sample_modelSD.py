@@ -11,45 +11,37 @@ Date : 17/03/2021
 """
 
 import matplotlib.pyplot as plt
+from truc import ModelSD
 import numpy as np
 import subprocess
 import argparse
 import ast
 
+
 if __name__ == "__main__":
 
 
-# Parse input parameters
+	# Parse input parameters
 
 	parser = argparse.ArgumentParser()
 	parser.add_argument('--path', '-p', type=str,
 	                    help='path to the hidden variable file')
 	args = parser.parse_args()
 
-	# Sets variables
+	# Sets paths
+
 	path_to_hidvar = args.path+'.dat'
+	path_to_params = args.path+'_params.txt'
 
-	file = open(args.path+'_params.txt', 'r')
-	contents = file.read()
-	dictionary = ast.literal_eval(contents)
-	file.close()
-	beta = dictionary['beta']
-	mu = dictionary['mu']
-	D = dictionary['dimension']
+	# Instanciate the model
 
-	# Loads hidden variables
-	kappa = (np.loadtxt(path_to_hidvar, dtype=str).T[1]).astype('float')
-	if D<2.5:
-		coordinates = (np.loadtxt(path_to_hidvar, dtype=str).T[2:2+D]).astype('float')
-	else:
-		coordinates = (np.loadtxt(path_to_hidvar, dtype=str).T[2:3+D]).astype('float')
-
-	print(coordinates.shape)
+	mod = ModelSD()
+	mod.load_parameters(path_to_params)
 
 	# Compiles the cpp code
 	p = subprocess.Popen(['g++', '-O3', '-std=c++11', 'geometric_Sd_model/examples/generate_edgelist_from_modelSD.cpp', '-o', 'generate_edgelist_from_modelSD']) 
 	p.wait()
-	pg = subprocess.Popen(['./generate_edgelist_from_modelSD', '-n', '-d', str(D), '-t', '-b', str(beta), '-m', str(mu), path_to_hidvar])
+	pg = subprocess.Popen(['./generate_edgelist_from_modelSD', '-n', '-d', str(mod.D), '-t', '-b', str(mod.beta), '-m', str(mod.mu), path_to_hidvar])
 	pg.wait()
 
 
