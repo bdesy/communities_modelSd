@@ -68,20 +68,27 @@ def default_mu(D, beta, average_kappa):
     return mu
 
 
-def mode_taylor(D, a, b):
+def mode_taylor_alpha(D, a, b):
     x = (D-1)/b - a/(2*np.tan(a))
     x *= 2*np.tan(a)
-    x /= (1 + b/2 - a*(np.cos(a)**(-2))/np.tan(a))
+    x /= (1 + b/2 - a/(np.sin(a)*np.cos(a)))
     x += a
     return x
 
-Dthetas = np.linspace(0.001, np.pi, 1000)
-kappa_i, kappa_j = 100., 100.
-beta = 11.
+def mode_taylor_pisur2(D, a, b):
+    x = 1 - (D-1)/b * (2/np.pi) 
+    x *= (1 + 2*a/np.pi)**b
+    x += np.pi/2
+    return x
+
+Dthetas = np.linspace(0.001, np.pi, 10000)
+kappa_i, kappa_j = 300., 300.
+beta = 12.
+N=1000
 average_kappa = 10.
 
 for D in range(10, 0, -1):
-    R = compute_radius(1000, D)
+    R = compute_radius(N, D)
     print(D)
     mu = default_mu(D, beta, average_kappa)
     a = alpha(R, kappa_i, kappa_j, mu, D)
@@ -98,6 +105,7 @@ for D in range(10, 0, -1):
     c = cmap((D+1)/11)
     plt.plot(Dthetas, pij*rho/denum, label=r'$D = {}$'.format(D), color=c)
     print(D, a, beta)
+    print((D-1)/beta, '(D-1)/beta', a*np.tan(a), 'a tan a')
     #plt.plot(Dthetas, (a/Dthetas)**beta, label=D)
     #plt.axvline(a, color=c)
     #plt.plot(np.arctan((D-1)/beta), D/10,'o', ms=12, color=c) 
@@ -107,9 +115,9 @@ for D in range(10, 0, -1):
         g = 1. / ((1+(a/Dthetas)**beta))
 
         idth = np.argwhere(np.diff(np.sign(f - g))).flatten()
-        plt.axvline(Dthetas[idth], color=c) 
-        plt.axvline(a, linestyle=':', color=c)
-        plt.axvline(mode_taylor(D, a, beta), linestyle='--', color=c)
+        #plt.axvline(Dthetas[idth], color=c) 
+        plt.axvline(mode_taylor_alpha(D, a, beta), linestyle=':', color=c)
+        plt.axvline(a, color=c)
 
 plt.xticks([0, np.pi/4, np.pi/2, 3*np.pi/4, np.pi],['0', r'$\pi/4$', r'$\pi/2$', r'$3\pi/4$', r'$\pi$'])
 plt.xlabel(r'$\Delta\theta$')
@@ -117,8 +125,8 @@ plt.ylabel(r'$\rho(\Delta\theta)$')
 plt.legend()
 plt.title(r'$\kappa={}$, $\kappa^,={}$, $\beta={}$, $\mu={}$'.format(kappa_i, kappa_j, beta, mu))
 #plt.savefig('pdf', dpi=600)
-#plt.ylim(0,1.0)
-#plt.xlim(0, np.pi/4)
+#plt.ylim(0,10.)
+plt.xlim(0, np.pi)
 
 plt.show()
 
