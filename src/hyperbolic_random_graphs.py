@@ -41,7 +41,7 @@ def compute_default_mu(D, beta, average_kappa):
         mu /= (2*average_kappa*(D+1))
     return mu
 
-#@njit
+@njit
 def compute_angular_distance(coord_i, coord_j, D, euclidean=False):
     """Computes angular distancce between two points on an hypersphere
 
@@ -65,13 +65,13 @@ def compute_angular_distance(coord_i, coord_j, D, euclidean=False):
         out = np.arccos(np.dot(coord_i, coord_j)/denum)
     return out
 
-#@njit
+@njit
 def compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, R, beta, mu, D):
     chi = R * compute_angular_distance(coord_i, coord_j, D)
     chi /= (mu * kappa_i * kappa_j)**(1./D)
     return 1./(1. + chi**beta)
 
-#@njit
+@njit
 def compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D):
     """Computes expected degree of a node in the S^D model
 
@@ -99,7 +99,7 @@ def compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D):
     return expected_k_i
 
 
-#@njit
+@njit
 def compute_all_expected_degrees(N, coordinates, kappas, R, beta, mu, D):
     """Computes expected degree of all nodes in the S^D model
 
@@ -358,7 +358,6 @@ class ModelSD():
                         self.coordinates, self.kappas, 
                         self.R, self.beta, self.mu, self.target_degrees, 
                         rng, self.D, verbose=verbose, perturbation=perturbation)
-        print(kappas, self.kappas)
         self.kappas = kappas
         print('Optimization has succeeded : {}'.format(success))
 
