@@ -32,8 +32,16 @@ def compute_radius(N, D):
     R /= np.pi**((D+1.)/2.)
     return R**(1./D)
 
+def compute_default_mu(D, beta, average_kappa):
+    if beta < D:
+        print('Default value for mu is not valid if beta < D')
+    else: 
+        mu = gamma((D+1)/2.) * np.sin((D+1)*np.pi/beta) * beta
+        mu /= np.pi**((D+2)/2)
+        mu /= (2*average_kappa*(D+1))
+    return mu
 
-@njit
+#@njit
 def compute_angular_distance(coord_i, coord_j, D, euclidean=False):
     """Computes angular distancce between two points on an hypersphere
 
@@ -57,13 +65,13 @@ def compute_angular_distance(coord_i, coord_j, D, euclidean=False):
         out = np.arccos(np.dot(coord_i, coord_j)/denum)
     return out
 
-@njit
+#@njit
 def compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, R, beta, mu, D):
     chi = R * compute_angular_distance(coord_i, coord_j, D)
     chi /= (mu * kappa_i * kappa_j)**(1./D)
-    return 1./(1 + chi**beta)
+    return 1./(1. + chi**beta)
 
-@njit
+#@njit
 def compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D):
     """Computes expected degree of a node in the S^D model
 
@@ -91,7 +99,7 @@ def compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D):
     return expected_k_i
 
 
-@njit
+#@njit
 def compute_all_expected_degrees(N, coordinates, kappas, R, beta, mu, D):
     """Computes expected degree of all nodes in the S^D model
 
@@ -266,7 +274,7 @@ def optimize_kappas(N, tol, max_iterations, coordinates, kappas, R, beta, mu, ta
         print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
     return kappas, success
 
-@njit
+#@njit
 def build_probability_matrix(N, kappas, coordinates, R, beta, mu, D, order=None):
     mat = np.zeros((N,N))
     if order is None:
@@ -311,11 +319,19 @@ class ModelSD():
         file.close()
         self.set_parameters(dictionary)
 
-    def set_parameters(self, dictionary):
-        self.beta = dictionary['beta']
-        self.mu = dictionary['mu']
-        self.D = dictionary['dimension']
-        self.R = dictionary['radius']
+    def set_parameters(self, params_dict):
+        self.beta = params_dict['beta']
+        if 'mu' in params_dict:
+            self.mu = params_dict['mu']
+        self.D = params_dict['dimension']
+        if 'radius' in params_dict:
+            self.R = params_dict['radius']
+        if 'N' in params_dict:
+            self.N = params_dict['N']
+            self.R = compute_radius(self.N, self.D) 
+
+    def set_mu_to_default_value(self, average_k):
+        self.mu = compute_default_mu(self.D, self.beta, average_k)
 
     def load_hidden_variables(self, path_to_hidvar):
         self.nodes = np.loadtxt(path_to_hidvar, dtype=str).T[0]
@@ -337,6 +353,15 @@ class ModelSD():
         else:
             self.nodes = nodes
 
+    def optimize_kappas(self, tol, max_iterations, rng, verbose=True, perturbation=0.1):
+        kappas, success = optimize_kappas(self.N, tol, max_iterations, 
+                        self.coordinates, self.kappas, 
+                        self.R, self.beta, self.mu, self.target_degrees, 
+                        rng, self.D, verbose=verbose, perturbation=perturbation)
+        print(kappas, self.kappas)
+        self.kappas = kappas
+        print('Optimization has succeeded : {}'.format(success))
+
     def load_from_graphml(self, path_to_xml):
         self.G = nx.read_graphml(path_to_xml)
         self.D = self.G.graph['dimension']
@@ -348,9 +373,8 @@ class ModelSD():
 
 
     def build_probability_matrix(self, order=None):
-        if type(order) is str:
-            if order=='theta':
-                order = np.argsort(self.coordinates.T[0])
+        if (type(order) is str) and (order=='theta'):
+            order = np.argsort(self.coordinates.T[0])
         self.probs = build_probability_matrix(self.N, self.kappas, self.coordinates, 
                                               self.R, self.beta, self.mu, self.D, order=order)
 
