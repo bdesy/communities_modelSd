@@ -31,23 +31,25 @@ vertices = np.array(['v{:05d}'.format(i) for i in range(N)])
 header = 'vertex       kappa       theta       phi       target degree'
 
 #exp=''
-exp='deux_hemispheres'
+exp='test_sigma'
 print(exp)
 
 if exp=='test_sigma':
     centers = [[0, np.pi/2], [np.pi/2, 0.15], [3*np.pi/2, 0.15], [np.pi, np.pi/2]]
+    sizes = [150, 350, 350, 150]
     for sig in [0.05, 0.1, 0.2, 0.3]:
         print('sigma is {}'.format(sig))
         sigmas = [sig, sig, sig, sig]
-        filename = 'data/defi_sigma{}'.format(sig)
-        thetas, phis = sample_gaussian_clusters_on_sphere(centers, sigmas, sizes=[150, 350, 350, 150])
+        filename = 'data/defi/defi_sigma{}'.format(sig)
+        thetas, phis = sample_gaussian_clusters_on_sphere(centers, sigmas, sizes=sizes)
         coordinates = np.column_stack((thetas, phis))
         kappas = optimize_kappas(N, tol, max_iterations, coordinates, 
                             target_degrees+1e-3, R, beta, mu, 
                             target_degrees, rng, D=2, verbose=True, perturbation=0.1)
 
-
+        print(vertices.shape, kappas.shape, coordinates.shape, target_degrees.shape)
         data = np.column_stack((vertices, kappas, coordinates, target_degrees))
+        print(data.shape)
         np.savetxt(filename+'.dat', data, delimiter='       ', fmt='%s',header=header)
         params = {'mu':mu, 'beta':beta, 'dimension':D, 'radius':R}
         params_file = open(filename+'_params.txt', 'a')
