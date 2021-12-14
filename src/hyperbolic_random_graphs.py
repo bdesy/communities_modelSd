@@ -32,17 +32,21 @@ def compute_radius(N, D):
     R /= np.pi**((D+1.)/2.)
     return R**(1./D)
 
-def compute_default_mu(D, beta, average_kappa):
+def compute_default_mu(D, beta, average_kappa, *args_integral):
     if beta < D:
-        print('Default value for mu is not valid if beta < D')
+        mu = 0.01 #gamma(D/2.) / (average_kappa * 2 * np.pi**(D/2) )
+        #mu /= integral_chi_normalization(D, beta, args_integral)
     else: 
-        mu = gamma((D+1)/2.) * np.sin((D+1)*np.pi/beta) * beta
-        mu /= np.pi**((D+2)/2)
-        mu /= (2*average_kappa*(D+1))
+        mu = gamma(D/2.) * np.sin(D*np.pi/beta) * beta
+        mu /= np.pi**((D+1)/2)
+        mu /= (2*average_kappa*D)
     return mu
 
+def probability_chi(chi, beta):
+    return 1./(1 + chi**beta)
+
 @njit
-def compute_angular_distance(coord_i, coord_j, D, euclidean=False):
+def compute_angular_distance(coord_i, coord_j, D, euclidean):
     """Computes angular distancce between two points on an hypersphere
 
     Parameters
@@ -66,13 +70,13 @@ def compute_angular_distance(coord_i, coord_j, D, euclidean=False):
     return out
 
 @njit
-def compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, R, beta, mu, D):
-    chi = R * compute_angular_distance(coord_i, coord_j, D)
+def compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, R, beta, mu, D, euclidean):
+    chi = R * compute_angular_distance(coord_i, coord_j, D, euclidean)
     chi /= (mu * kappa_i * kappa_j)**(1./D)
     return 1./(1. + chi**beta)
 
 @njit
-def compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D):
+def compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D, euclidean):
     """Computes expected degree of a node in the S^D model
 
     Parameters
@@ -95,12 +99,13 @@ def compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D):
     expected_k_i = 0
     for j in range(N):
         if j!=(i):
-            expected_k_i += compute_connection_probability(coord_i, coordinates[j], kappa_i, kappas[j], R, beta, mu, D)
+            expected_k_i += compute_connection_probability(coord_i, coordinates[j], kappa_i, kappas[j],
+                            R, beta, mu, D, euclidean)
     return expected_k_i
 
 
 @njit
-def compute_all_expected_degrees(N, coordinates, kappas, R, beta, mu, D):
+def compute_all_expected_degrees(N, coordinates, kappas, R, beta, mu, D, euclidean):
     """Computes expected degree of all nodes in the S^D model
 
     Parameters
@@ -118,7 +123,7 @@ def compute_all_expected_degrees(N, coordinates, kappas, R, beta, mu, D):
     """
     expected_degrees = np.zeros(N)
     for i in range(N):
-        expected_degrees[i] = compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D=D)
+        expected_degrees[i] = compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D, euclidean)
     return expected_degrees
 
 def sample_gaussian_clusters_on_sphere(centers, sigmas, sizes):
@@ -156,33 +161,6 @@ def sample_uniformly_on_hypersphere(N, D):
             while np.linalg.norm(pos) < 1e-4:
                 pos = np.random.normal(size=D+1)
             coordinates[i] = pos / np.linalg.norm(pos)
-    return coordinates
-
-
-def project_on_lower_dim(Df, prob_matrix, euclidean=False):
-    '''
-    Uses Laplacian Eigenmaps algorithm to project on a lower
-    dimensional hypersphere
-    '''
-    N = prob_matrix.shape[0]
-    D_matrix = np.diag(np.sum(prob_matrix, axis=1))
-    L_matrix = D_matrix - prob_matrix
-    iD_matrix = np.diag(1./np.sum(prob_matrix, axis=1))
-    arr = np.matmul(iD_matrix, L_matrix)
-    M, Y = np.linalg.eig(arr)
-
-    if euclidean:
-        ecoordinates = Y[:, 1:Df+2]
-        norm = np.repeat(np.linalg.norm(ecoordinates, axis=1).reshape((N,1)), Df+1, axis=1)
-        coordinates = ecoordinates / norm
-    else:
-        if Df==1:
-            coordinates = (np.arctan2(Y[:,2], Y[:,1])+np.pi).reshape((N, 1))
-        elif Df==2:
-            phis = (np.arctan2(Y[:,2], Y[:,1])).reshape((N, 1))
-            num = np.sqrt(Y[:,2]**2 + Y[:,1]**2)
-            thetas = np.arctan2(num, Y[:,3]).reshape((N, 1))
-            coordinates = np.column_stack((thetas, phis)) ## POULET MARCHE PAS À ARRANGER!!!
     return coordinates
 
 
@@ -229,7 +207,7 @@ def get_target_degree_sequence(average_degree, N, rng, dist, sorted=True, y=2.5)
     return (target_degrees).astype(float)
 
 
-def optimize_kappas(N, tol, max_iterations, coordinates, kappas, R, beta, mu, target_degrees, rng, D, verbose=False, perturbation=0.1):
+def optimize_kappas(N, tol, max_iterations, coordinates, kappas, R, beta, mu, target_degrees, rng, D, euclidean, verbose=False, perturbation=0.1):
     """Optimizes the hidden degrees given coordinates on S^D and target expected degree sequence
 
     Parameters
@@ -248,34 +226,40 @@ def optimize_kappas(N, tol, max_iterations, coordinates, kappas, R, beta, mu, ta
     epsilon = 1.e3
     ell, m = 0, 0
     factor = 10
-    while (epsilon > tol):
+    stuck = 0
+    while (epsilon > tol) and (m < max_iterations):
         for j in (tqdm(range(N))if verbose else range(N)):
             i = rng.integers(N)
-            expected_k_i = compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D=D)
+            expected_k_i = compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D, euclidean)
             while (abs(expected_k_i - target_degrees[i]) > tol*factor) and (ell < max_iterations):
                 delta = rng.random()*perturbation
                 kappas[i] = abs(kappas[i] + (target_degrees[i]-expected_k_i)*delta) 
-                expected_k_i = compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D=D)
+                expected_k_i = compute_expected_degree(N, i, coordinates, kappas, R, beta, mu, D, euclidean)
                 ell += 1
             ell = 0
-        expected_degrees = compute_all_expected_degrees(N, coordinates, kappas, R, beta, mu, D=D)
+        expected_degrees = compute_all_expected_degrees(N, coordinates, kappas, R, beta, mu, D, euclidean)
         deviations = (target_degrees-expected_degrees)/target_degrees
-        epsilon = np.max(np.array([np.max(deviations), abs(np.min(deviations))]))
+        epsilon_m = np.max(np.array([np.max(deviations), abs(np.min(deviations))]))
+        if abs(epsilon_m - epsilon)<1e-6:
+            stuck += 1
+        epsilon = epsilon_m
         factor = 1
         m += 1
         if verbose:
             print(m, epsilon)
-        if m>max_iterations:
-            success = False
-        else:
-            success = True
-
-    if m==max_iterations:
+        if stuck > 20:
+            sign =  (rng.integers(2) - 0.5) * 2
+            kappas += rng.random(size=(N,)) * perturbation * sign
+            stuck = 0
+    if m>max_iterations:
+        success = False
         print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
+    else:
+        success = True
     return kappas, success
 
-#@njit
-def build_probability_matrix(N, kappas, coordinates, R, beta, mu, D, order=None):
+@njit
+def build_probability_matrix(N, kappas, coordinates, R, beta, mu, D, euclidean, order=None):
     mat = np.zeros((N,N))
     if order is None:
         order = np.arange(N)
@@ -283,11 +267,11 @@ def build_probability_matrix(N, kappas, coordinates, R, beta, mu, D, order=None)
         coord_i, kappa_i = coordinates[order[i]], kappas[order[i]]
         for j in range(i):
             coord_j, kappa_j = coordinates[order[j]], kappas[order[j]]
-            mat[i,j] = compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, R, beta, mu, D)
+            mat[i,j] = compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, R, beta, mu, D, euclidean)
     return mat+mat.T
 
 @njit
-def build_angular_distance_matrix(N, coordinates, D, order=None, euclidean=False):
+def build_angular_distance_matrix(N, coordinates, D, euclidean, order=None):
     mat = np.zeros((N,N))
     if order is None:
         order = np.arange(N)
@@ -295,11 +279,11 @@ def build_angular_distance_matrix(N, coordinates, D, order=None, euclidean=False
         coord_i = coordinates[order[i]]
         for j in range(i):
             coord_j = coordinates[order[j]]
-            mat[i,j] = compute_angular_distance(coord_i, coord_j, D, euclidean=euclidean)
+            mat[i,j] = compute_angular_distance(coord_i, coord_j, D, euclidean)
     return mat+mat.T
 
 @njit
-def build_chi_matrix(N, coordinates, kappas, D, R, mu, order=None, euclidean=False):
+def build_chi_matrix(N, coordinates, kappas, D, R, mu, euclidean, order=None):
     mat = np.zeros((N,N))
     if order is None:
         order = np.arange(N)
@@ -307,7 +291,7 @@ def build_chi_matrix(N, coordinates, kappas, D, R, mu, order=None, euclidean=Fal
         coord_i, kappa_i = coordinates[order[i]], kappas[order[i]]
         for j in range(i):
             coord_j, kappa_j = coordinates[order[j]], kappas[order[j]]
-            delta_theta = compute_angular_distance(coord_i, coord_j, D, euclidean=euclidean)
+            delta_theta = compute_angular_distance(coord_i, coord_j, D, euclidean)
             mat[i,j] = R * delta_theta / (mu*kappa_i*kappa_j)**(1./D)
     return mat+mat.T
 
@@ -318,12 +302,20 @@ class ModelSD():
         dictionary = ast.literal_eval(contents)
         file.close()
         self.set_parameters(dictionary)
+        if self.D > 2:
+            self.euclidean = True
+        else:
+            self.euclidean = False
 
     def set_parameters(self, params_dict):
         self.beta = params_dict['beta']
         if 'mu' in params_dict:
             self.mu = params_dict['mu']
         self.D = params_dict['dimension']
+        if self.D > 2:
+            self.euclidean = True
+        else:
+            self.euclidean = False
         if 'radius' in params_dict:
             self.R = params_dict['radius']
         if 'N' in params_dict:
@@ -357,7 +349,7 @@ class ModelSD():
         kappas, success = optimize_kappas(self.N, tol, max_iterations, 
                         self.coordinates, self.kappas, 
                         self.R, self.beta, self.mu, self.target_degrees, 
-                        rng, self.D, verbose=verbose, perturbation=perturbation)
+                        rng, self.D, self.euclidean, verbose=verbose, perturbation=perturbation)
         self.kappas = kappas
         print('Optimization has succeeded : {}'.format(success))
 
@@ -375,26 +367,27 @@ class ModelSD():
         if (type(order) is str) and (order=='theta'):
             order = np.argsort(self.coordinates.T[0])
         self.probs = build_probability_matrix(self.N, self.kappas, self.coordinates, 
-                                              self.R, self.beta, self.mu, self.D, order=order)
+                                              self.R, self.beta, self.mu, self.D, 
+                                              order=order, euclidean=self.euclidean)
 
-    def build_angular_distance_matrix(self, order=None, euclidean=False):
+    def build_angular_distance_matrix(self, order=None):
         if type(order) is str:
             if order=='theta':
                 order = np.argsort(self.coordinates.T[0])
         self.angular_distance_matrix = build_angular_distance_matrix(self.N, self.coordinates, self.D, 
-                                                                    order=order, euclidean=euclidean)
+                                                                    order=order, euclidean=self.euclidean)
 
-    def build_chi_matrix(self, order=None, euclidean=False):
+    def build_chi_matrix(self, order=None):
         if type(order) is str:
             if order=='theta':
                 order = np.argsort(self.coordinates.T[0])
         self.chi_matrix = build_chi_matrix(self.N, self.coordinates, self.kappas, 
                                             self.D, self.R, self.mu,
-                                            order=order, euclidean=euclidean)
+                                            order=order, euclidean=self.euclidean)
 
     def compute_all_expected_degrees(self):
         self.expected_degrees = compute_all_expected_degrees(self.N, self.coordinates, self.kappas, 
-                                    self.R, self.beta, self.mu, self.D)
+                                    self.R, self.beta, self.mu, self.D, euclidean=self.euclidean)
 
     def study_distance_distribution(self):
         average_angular_distance = np.sum(self.probs*self.angular_distance_matrix)/2
@@ -411,7 +404,8 @@ class ModelSD():
         return average_angular_distance, num_average_angular_distance, average_chi, num_average_chi
 
     def sample_random_matrix(self):
-        rand = np.random.random(size=(self.N, self.N))
+        rand = np.triu(np.random.random(size=(self.N, self.N)), k=1)
+        rand += rand.T
         return np.where(self.probs>rand, 1, 0)
 
 # Tests
@@ -433,3 +427,7 @@ def test_compute_radius_1D():
 
 def test_compute_radius_2D():
     assert abs(compute_radius(1000, D=2) - np.sqrt(1000./(4*np.pi))) < 1e-5
+
+def test_compute_expected_degree():
+    pass
+    #N, i, coordinates, kappas, R, beta, mu, D 
