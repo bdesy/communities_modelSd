@@ -21,6 +21,7 @@ sys.path.insert(0, '../src/')
 from hyperbolic_random_graphs import *
 
 from math import factorial, gamma
+from scipy.special import hyp2f1
 
 font = {'size'   : 13}
 
@@ -28,19 +29,17 @@ matplotlib.rc('font', **font)
 
 cmap = matplotlib.cm.get_cmap('viridis')
 
-def connection_prob(Dtheta, kappa_i, kappa_j, D, beta, R=1, mu=1):
+def compute_eta(kappa_i, kappa_j, mu, R, D):
+    return mu*kappa_i*kappa_j/(R**D)
+
+def connection_prob(Dtheta, kappa_i, kappa_j, D, beta, R, mu):
     chi = R * Dtheta
     chi /= (mu * kappa_i * kappa_j)**(1./D)
     return 1./(1 + chi**beta)
 
-def angular_prob(Dtheta, D):
-    a = gamma((D+1)/2) / gamma(D/2)
-    b = np.sin(Dtheta)**(D-1)
-    return a*b/np.sqrt(np.pi)
-
-def integrand(Dtheta, kappa_i, kappa_j, D, beta, R=1, mu=1):
+def integrand(Dtheta, kappa_i, kappa_j, D, beta, R, mu):
     a = connection_prob(Dtheta, kappa_i, kappa_j, D, beta, R, mu)
-    b = angular_prob(Dtheta, D)
+    b = np.sin(Dtheta)**(D-1)
     return a*b
 
 def integrated_connection_prob(kappa_i, kappa_j, D, beta, R=1, mu=1):
@@ -50,13 +49,6 @@ def integrated_connection_prob(kappa_i, kappa_j, D, beta, R=1, mu=1):
     elif D==1:
         out = quad(integrand, 0, np.pi, args=args)
     return out
-
-def bfk_term(n, m, a, b):
-    t = a**(-2*n-2) * (-1)**m / (b*m + 2*n +2)
-    tt = np.pi**(-b*(m+1) + 2*n + 2) * (-1)**m / ((-b*(m+1) + 2*n + 2) * a**(b*(m+1)))
-    ttt = a**(-2*n-2) * (-1)**m / (-b*(m+1) + 2*n + 2)
-    out = (t + tt - ttt)*(-1)**n
-    return out / factorial(2*n + 1)
 
 def alpha(R, kappa_i, kappa_j, mu, D):
     num = (mu*kappa_i*kappa_j)**(1./D)
@@ -71,19 +63,12 @@ def default_mu(D, beta, average_kappa):
         mu /= (2*average_kappa*(D+1))
     return mu
 
+def normalization_2f1(kappa_i, kappa_j, D, beta, mu, R):
+    tau = D/beta
+    eta = mu*kappa_i*kappa_j/(R**D)
+    um = (np.pi**D)/eta
+    return um * hyp2f1(1., tau, 1.+tau, -um**(1./tau)) / D
 
-def mode_taylor_alpha(D, a, b):
-    x = (D-1)/b - a/(2*np.tan(a))
-    x *= 2*np.tan(a)
-    x /= (1 + b/2 - a/(np.sin(a)*np.cos(a)))
-    x += a
-    return x
-
-def mode_taylor_pisur2(D, a, b):
-    x = 1 - (D-1)/b * (2/np.pi) 
-    x *= (1 + 2*a/np.pi)**b
-    x += np.pi/2
-    return x
 
 Dthetas = np.linspace(1e-5, np.pi, 100000)
 kappa_i, kappa_j = 10., 10.
@@ -99,20 +84,19 @@ for D in range(10, 0, -1):
     a = alpha(R, kappa_i, kappa_j, mu, D)
     print(D, 'D', a, 'alpha', mu, 'mu')
     n,m = 10, 100
-    truc = 0
-    #for i in range(n):
-    #    for j in range(m):
-    #        truc += bfk_term(i, j, a, beta)
-    #print(D, 'sum is ', truc/2)
-    rho = angular_prob(Dthetas, D)
+
+    rho = np.sin(Dthetas)**(D-1)
     pij = connection_prob(Dthetas, kappa_i, kappa_j, D, beta, R=R, mu=mu)
     denum, error = integrated_connection_prob(kappa_i, kappa_j, D, beta, mu=mu, R=R)
+    other_denum = normalization_2f1(kappa_i, kappa_j, D, beta, mu=mu, R=R)
     print('int is', denum, error)
+    print('hyp2f1 is ', other_denum)
     c = cmap((D+1)/11)
+
     plt.plot(Dthetas, pij*rho/denum, label=r'$D = {}$'.format(D), color=c)
-    print(np.sum((pij*rho/denum)[:-1]*np.diff(Dthetas)))
-    #print(D, a, beta)
-    #print((D-1)/beta, '(D-1)/beta', a*np.tan(a), 'a tan a')
+    #plt.plot(Dthetas, pij*rho/other_denum, ':', color=c)
+    print('normalisation verif : ', np.sum((pij*rho/denum)[:-1]*np.diff(Dthetas)))
+    
     plt.axvline(a, color=c, alpha=0.5)
     #if D==1 :
     #    plt.axhline(1./a)
