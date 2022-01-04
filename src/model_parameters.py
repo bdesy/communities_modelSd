@@ -17,11 +17,13 @@ class Parameters(ABC):
         pass
 
     def load_from_file(self, path_to_dict):
-        dictionary = pickle.load(path_to_dict)
+        with open(path_to_dict, 'rb') as file:
+            dictionary = pickle.load(file)
         self.specify(dictionary)
 
     def save_to_file(self, path_for_dict):
-        pickle.dump(vars(self), path_for_dict)
+        with open(path_for_dict, 'wb') as file:
+            pickle.dump(vars(self), file)
 
 class GlobalParameters(Parameters):
     def specify(self, dictionary):
@@ -31,9 +33,11 @@ class GlobalParameters(Parameters):
         self.beta = dictionary['beta']
         self.euclidean = dictionary['euclidean']
         self.radius = dictionary['radius']
-        self.njitable = (self.dimension, self.N, 
-                         self.mu, self.beta, self.radius, 
-                         self.euclidean)
+    
+    def get_njitable(self):
+        return (self.dimension, self.N, 
+                self.mu, self.beta, self.radius, 
+                self.euclidean)
 
 
 class LocalParameters(Parameters):
@@ -58,6 +62,10 @@ if __name__ == '__main__':
                  'beta': 3.5, 'euclidean': False, 'radius': 159.14}
     gp = GlobalParameters()
     gp.specify(test_dico)
+    gp.save_to_file('test_file.pkl')
+    gpp = GlobalParameters()
+    gpp.load_from_file('test_file.pkl')
+    print(vars(gpp))
 
     @njit
     def foo(global_params):
@@ -65,5 +73,5 @@ if __name__ == '__main__':
         print(global_params)
         print('all good')
 
-    foo(gp.njitable)
+    foo(gp.get_njitable())
 
