@@ -26,13 +26,21 @@ class Parameters(ABC):
             pickle.dump(vars(self), file)
 
 class GlobalParameters(Parameters):
+    def __init__(self):
+        self.dimension = None
+        self.N = None
+        self.mu = None
+        self.beta = None
+        self.euclidean = None
+        self.radius = None
+
     def specify(self, dictionary):
-        self.dimension = dictionary['dimension']
         self.N = dictionary['N']
-        self.mu = dictionary['mu']
+        self.dimension = dictionary['dimension']
         self.beta = dictionary['beta']
-        self.euclidean = dictionary['euclidean']
+        self.mu = dictionary['mu']
         self.radius = dictionary['radius']
+        self.euclidean = dictionary['euclidean']
     
     def get_njitable(self):
         return (self.dimension, self.N, 
@@ -41,13 +49,25 @@ class GlobalParameters(Parameters):
 
 
 class LocalParameters(Parameters):
+    def __init__(self):
+        self.nodes = None
+        self.coordinates = None
+        self.kappas = None
+        self.target_degrees = None
+
     def specify(self, dictionary):
         self.nodes = dictionary['nodes']
         self.coordinates = dictionary['coordinates']
         self.kappas = dictionary['kappas']
         self.target_degrees = dictionary['target_degrees']
 
-class OptimizatonParameters(Parameters):
+class OptimizationParameters(Parameters):
+    def __init__(self):
+        self.tol = None
+        self.max_iterations = None
+        self.perturbation = None
+        self.verbose = None
+
     def specify(self, dictionary):
         self.tol = dictionary['tol']
         self.max_iterations = dictionary['max_iterations']

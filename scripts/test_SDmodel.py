@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '../src/')
-from hyperbolic_random_graphs import *
+from hyperbolic_random_graph import *
 import json
 from numba import njit
 from time import time
@@ -80,7 +80,13 @@ def get_cluster_coordinates(N, nb_communities):
 #optimization stuff
 tol = 1e-1
 max_iterations = 1000
+perturbation=0.1
+verbose=True
 rng = np.random.default_rng()
+opt_params = {'tol':tol, 
+            'max_iterations': max_iterations, 
+            'perturbation': perturbation,
+            'verbose':verbose}
 
 #graph properties
 average_k = 10.
@@ -99,17 +105,26 @@ titles = []
 target_degrees = get_target_degree_sequence(average_k, N, rng, 'exp', sorted=False, y=2.5) 
 for D in [1,2]:
     beta = D*beta_r
+    global_params=get_global_params_dict(N, D, beta, 0.01)
     key = 'S{}'.format(D)+'beta{}'.format(beta)
     sigma_D = get_sigma_d(sigma, D)
     sigmas = [sigma_D for i in range (nc)]
     coordinates = sample_gaussian_clusters_at_equator(D, theta_centers, sigmas, sizes)
     order_array = np.argsort(coordinates.T[0])
     SD = ModelSD()
-    SD.set_parameters({'dimension':D, 'N':N, 'beta':beta})
+    SD.gp.specify(global_params)
+    SD.reassign_parameters()
     SD.set_mu_to_default_value(average_k)
-    SD.set_hidden_variables(coordinates, target_degrees+1e-3, target_degrees, nodes=None)
+    local_params = {'coordinates':coordinates, 
+                    'kappas': target_degrees+1e-3, 
+                    'target_degrees':target_degrees, 
+                    'nodes':np.arange(N)}
+    SD.lp.specify(local_params)
+    SD.reassign_parameters()
     print(np.min(SD.kappas), SD.mu, SD.N, SD.D, 'kappa0, mu, N, D')
-    SD.optimize_kappas(tol, max_iterations, rng, verbose=True, perturbation=0.1)
+
+    SD.op.specify(opt_params)
+    SD.optimize_kappas(rng)
     SD.build_probability_matrix(order=order_array)   
     matrices.append(SD.probs)
     titles.append(key)
