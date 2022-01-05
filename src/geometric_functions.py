@@ -32,13 +32,63 @@ def compute_angular_distance(coord_i, coord_j, dimension, euclidean):
         out = np.arccos(np.dot(coord_i, coord_j)/denum)
     return out
 
+
+#geometric transformation on unit sphere
+@njit
+def transform_angular_to_euclidean(coordinates):
+    theta, phi = coordinates.T[0], coordinates.T[1]
+    x = np.sin(phi)*np.cos(theta)
+    y = np.sin(phi)*np.sin(theta)
+    z = np.cos(phi)
+    return np.column_stack((x,y,z))
+
+@njit
+def transform_euclidean_to_angular(coordinates):
+    x,y,z = coordinates.T[0], coordinates.T[1], coordinates.T[2]
+    numerator = np.sqrt(x**2 + y**2)
+    theta = np.arctan2(y, x)
+    phi = np.arctan2(numerator, z)
+    return np.column_stack((theta, phi))
+
+@njit
+def get_rotation_matrix_x(angle):
+    R = np.eye(3)
+    c, s = np.cos(angle), np.sin(angle)
+    R[1,1], R[2,2] = c, c
+    R[1,2], R[2,1] = -s, s
+    return R
+
+@njit
+def get_rotation_matrix_y(angle):
+    R = np.eye(3)
+    c, s = np.cos(angle), np.sin(angle)
+    R[0,0], R[2,2] = c, c
+    R[2,0], R[0,2] = -s, s
+    return R
+
+@njit
+def get_rotation_matrix_z(angle):
+    R = np.eye(3)
+    c, s = np.cos(angle), np.sin(angle)
+    R[0,0], R[1,1] = c, c
+    R[0,1], R[1,0] = -s, s
+    return R
+
+@njit
+def rotate_euclidean_coordinates(coordinates, N, rotation_matrix):
+    new_coordinates = np.zeros(coordinates.shape)
+    for i in range(N):
+        new_coordinates[i] = np.dot(rotation_matrix, coordinates[i].T)
+    return new_coordinates
+
+#ramdom sampling functions
 def sample_gaussian_points_on_sphere(x_o, y_o, z_o, sigma):
     x = np.random.normal(loc=x_o, scale=sigma)
     y = np.random.normal(loc=y_o, scale=sigma)
     z = np.random.normal(loc=z_o, scale=sigma)
     point = np.array([x,y,z])
     point /= np.linalg.norm(point)
-    num = np.sqrt(point[0]**2+ point[1]**2)
+    num = np.sqrt(point[0]**2 + point[1]**2)
     theta = np.arctan2(point[1], point[0])
     phi = np.arctan2(num, point[-1])
     return theta, phi

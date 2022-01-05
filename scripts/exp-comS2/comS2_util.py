@@ -48,11 +48,12 @@ def get_communities_coordinates_uniform(nb_com, N, sigma):
 def project_coordinates_on_circle(coordinates, N):
     pass
 
+
 ##tests
 
 
 from mpl_toolkits.mplot3d import Axes3D
-def plot_points_on_sphere(coordinates):
+def plot_points_on_sphere(coordinates, color='c'):
     # Create a sphere
     r = 1
     pi = np.pi
@@ -74,7 +75,7 @@ def plot_points_on_sphere(coordinates):
     ax = fig.add_subplot(111, projection='3d')
 
     ax.plot_surface(
-        x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
+        x, y, z,  rstride=1, cstride=1, color=color, alpha=0.3, linewidth=0)
 
     ax.scatter(xx,yy,zz,color="k",s=20)
 
@@ -84,6 +85,13 @@ def plot_points_on_sphere(coordinates):
     plt.tight_layout()
     plt.show()
 
-for i in range(3):
-    c = get_communities_coordinates_uniform(16, 1000, 0.1)
-    plot_points_on_sphere(c)
+N=100
+for i in range(5):
+    R = get_rotation_matrix_x(0.2)
+    c = get_communities_coordinates_uniform(16, N, 0.1)
+    e = transform_angular_to_euclidean(c)
+    rote = rotate_euclidean_coordinates(e, N, R)
+    cp = transform_euclidean_to_angular(rote)
+    d = build_angular_distance_matrix(N, c, D=2, euclidean=False)
+    dp = build_angular_distance_matrix(N, cp, D=2, euclidean=False)
+    print(np.sum(abs(d-dp)))
