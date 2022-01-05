@@ -11,7 +11,7 @@ Date : 03/01/2022
 import numpy as np
 import matplotlib.pyplot as plt
 import sys
-sys.path.insert(0, '../src/')
+sys.path.insert(0, '../../src/')
 from hyperbolic_random_graph import *
 import json
 from numba import njit
@@ -70,6 +70,7 @@ def sample_gaussian_clusters_at_equator(D, theta_centers, sigmas, sizes):
             coord_list.append(coordinates_i)
         coordinates = np.vstack(tuple(coord_list))
     return coordinates
+
 
 def get_cluster_coordinates(N, nb_communities):
     sizes = [int(N/nb_communities) for i in range(nb_communities)]

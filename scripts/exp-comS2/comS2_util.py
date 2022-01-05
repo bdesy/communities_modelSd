@@ -45,6 +45,9 @@ def get_communities_coordinates_uniform(nb_com, N, sigma):
     thetas, phis = sample_gaussian_clusters_on_sphere(centers, sigmas, sizes)
     return np.column_stack((thetas, phis))
 
+def project_coordinates_on_circle(coordinates, N):
+    pass
+
 ##tests
 
 
