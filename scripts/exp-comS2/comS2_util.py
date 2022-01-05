@@ -45,53 +45,29 @@ def get_communities_coordinates_uniform(nb_com, N, sigma):
     thetas, phis = sample_gaussian_clusters_on_sphere(centers, sigmas, sizes)
     return np.column_stack((thetas, phis))
 
+def randomly_rotate_coordinates(coordinates, N, rng):
+    sign = (rng.integers(2)-0.5)*2.
+    x_angle, y_angle, z_angle = rng.random(size=3)*np.pi*sign
+    R = get_xyz_rotation_matrix(x_angle, y_angle, z_angle)
+    xyz = transform_angular_to_euclidean(coordinates)
+    new_coordinates = rotate_euclidean_coordinates(xyz, N, R)
+    return transform_euclidean_to_angular(new_coordinates)
+
 def project_coordinates_on_circle(coordinates, N):
     pass
 
 
 ##tests
+def test_randomly_rotate_coordinates():
+    N=1000
+    nb_tests=50
+    rng = np.random.default_rng()
+    res = np.zeros(nb_tests)
+    for i in range(nb_tests):
+        c = get_communities_coordinates_uniform(rng.integers(3, 20), N, 0.1)
+        cp = randomly_rotate_coordinates(c, N, rng)
+        d = build_angular_distance_matrix(N, c, D=2, euclidean=False)
+        dp = build_angular_distance_matrix(N, cp, D=2, euclidean=False)
+        res[i] = np.sum(abs(d-dp))
+    assert np.max(res)<1e-8
 
-
-from mpl_toolkits.mplot3d import Axes3D
-def plot_points_on_sphere(coordinates, color='c'):
-    # Create a sphere
-    r = 1
-    pi = np.pi
-    cos = np.cos
-    sin = np.sin
-    phi, theta = np.mgrid[0.0:pi:100j, 0.0:2.0*pi:100j]
-    x = r*sin(phi)*cos(theta)
-    y = r*sin(phi)*sin(theta)
-    z = r*cos(phi)
-
-    #Import data
-    theta, phi = coordinates.T[0], coordinates.T[1]
-    xx = sin(phi)*cos(theta)
-    yy = sin(phi)*sin(theta)
-    zz = cos(phi)
-
-    #Set colours and render
-    fig = plt.figure()
-    ax = fig.add_subplot(111, projection='3d')
-
-    ax.plot_surface(
-        x, y, z,  rstride=1, cstride=1, color=color, alpha=0.3, linewidth=0)
-
-    ax.scatter(xx,yy,zz,color="k",s=20)
-
-    ax.set_xlim([-1,1])
-    ax.set_ylim([-1,1])
-    ax.set_zlim([-1,1])
-    plt.tight_layout()
-    plt.show()
-
-N=100
-for i in range(5):
-    R = get_rotation_matrix_x(0.2)
-    c = get_communities_coordinates_uniform(16, N, 0.1)
-    e = transform_angular_to_euclidean(c)
-    rote = rotate_euclidean_coordinates(e, N, R)
-    cp = transform_euclidean_to_angular(rote)
-    d = build_angular_distance_matrix(N, c, D=2, euclidean=False)
-    dp = build_angular_distance_matrix(N, cp, D=2, euclidean=False)
-    print(np.sum(abs(d-dp)))

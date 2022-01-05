@@ -75,6 +75,14 @@ def get_rotation_matrix_z(angle):
     return R
 
 @njit
+def get_xyz_rotation_matrix(x_angle, y_angle, z_angle):
+    R_x = get_rotation_matrix_x(x_angle)
+    R_y = get_rotation_matrix_y(y_angle)
+    R_z = get_rotation_matrix_z(z_angle)
+    R_xy = np.dot(R_x, R_y)
+    return np.dot(R_xy, R_z)
+
+@njit
 def rotate_euclidean_coordinates(coordinates, N, rotation_matrix):
     new_coordinates = np.zeros(coordinates.shape)
     for i in range(N):
@@ -129,21 +137,21 @@ def sample_uniformly_on_hypersphere(N, dimension):
 
 def test_compute_angular_distance_1D():
     theta_i, theta_j = np.array([0.]), np.array([0.5])
-    assert abs(compute_angular_distance(theta_i, theta_j, D=1) - 0.5) < 1e-5
+    assert abs(compute_angular_distance(theta_i, theta_j, 1, False) - 0.5) < 1e-5
 
 def test_compute_angular_distance_2D():
     theta_i, theta_j = np.array([0., np.pi/2]), np.array([0.5, np.pi/2])
-    assert abs(compute_angular_distance(theta_i, theta_j, D=2) - 0.5) < 1e-5
+    assert abs(compute_angular_distance(theta_i, theta_j, 2, False) - 0.5) < 1e-5
 
 def test_compute_angular_distance_3D():
     theta_i, theta_j = np.array([0., 0., 0., 1.,]), np.array([0., 0., 0., -1.,])
-    assert abs(compute_angular_distance(theta_i, theta_j, D=3) < np.pi) < 1e-5
+    assert abs(compute_angular_distance(theta_i, theta_j, 3, True) < np.pi) < 1e-5
 
 def test_compute_radius_1D():
-    assert abs(compute_radius(1000, D=1) - 1000./(2*np.pi)) < 1e-5
+    assert abs(compute_radius(1000, 1) - 1000./(2*np.pi)) < 1e-5
 
 def test_compute_radius_2D():
-    assert abs(compute_radius(1000, D=2) - np.sqrt(1000./(4*np.pi))) < 1e-5
+    assert abs(compute_radius(1000, 2) - np.sqrt(1000./(4*np.pi))) < 1e-5
 
 def test_compute_expected_degree():
     pass
