@@ -14,6 +14,8 @@ from numba import njit
 
 def compute_radius(N, dimension):
     '''Computes radius of hypersphere with surface area of N'''
+    assert dimension > 0, 'dimension is zero'
+    
     radius = N * gamma((dimension+1.)/2.) / 2.
     radius /= np.pi**((dimension+1.)/2.)
     return radius**(1./dimension)
@@ -21,6 +23,9 @@ def compute_radius(N, dimension):
 @njit
 def compute_angular_distance(coord_i, coord_j, dimension, euclidean):
     '''Computes angular distance between two points on an hypersphere'''
+    assert dimension > 0, 'dimension is zero'
+    assert coord_i.shape==(dimension+int(euclidean),), 'coordinate shape error'
+    
     if ((dimension==1) and (euclidean==False)):
         out = np.pi - abs(np.pi - abs(coord_i[0] - coord_j[0]))
     elif ((dimension==2) and (euclidean==False)):
@@ -30,6 +35,9 @@ def compute_angular_distance(coord_i, coord_j, dimension, euclidean):
     else:
         denum = np.linalg.norm(coord_i)*np.linalg.norm(coord_j)
         out = np.arccos(np.dot(coord_i, coord_j)/denum)
+    
+    assert out > 0., 'result negative'
+    assert out < np.pi, 'result greater than pi'
     return out
 
 

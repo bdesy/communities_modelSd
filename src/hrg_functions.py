@@ -14,18 +14,17 @@ from scipy.special import gamma
 from geometric_functions import *
 
 
-def compute_default_mu(D, beta, average_kappa, *args_integral):
-    if beta < D:
-        mu = 0.01 #gamma(D/2.) / (average_kappa * 2 * np.pi**(D/2) ) POULET
-        #mu /= integral_chi_normalization(D, beta, args_integral)
-    else: 
-        mu = gamma(D/2.) * np.sin(D*np.pi/beta) * beta
-        mu /= np.pi**((D+1)/2)
-        mu /= (2*average_kappa*D)
+def compute_default_mu(D, beta, average_kappa):
+    assert beta > D, 'beta smaller than dimension'
+    mu = gamma(D/2.) * np.sin(D*np.pi/beta) * beta
+    mu /= np.pi**((D+1)/2)
+    mu /= (2*average_kappa*D)
     return mu
 
 @njit
 def compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, global_parameters):
+    assert kappa_i * kappa_j > 0., 'kappa is not strictly positive'
+    assert mu > 0. 'mu is not strictly positive'
     D, N, mu, beta, R, euclidean = global_parameters
     chi = R * compute_angular_distance(coord_i, coord_j, D, euclidean)
     chi /= (mu * kappa_i * kappa_j)**(1./D)
