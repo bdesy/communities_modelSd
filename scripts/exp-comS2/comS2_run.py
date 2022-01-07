@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import sys
 sys.path.insert(0, '../../src/')
 from hyperbolic_random_graph import *
+from geometric_functions import *
 from time import time
 import argparse
 from comS2_util import *
@@ -35,33 +36,36 @@ args = parser.parse_args()
 N = args.nb_nodes
 nb_com = args.nb_communities
 sigma = args.sigma
+if args.order:
+    order='theta'
+else:
+    order=None
+
+#specify random number generator
+rng = np.random.default_rng()
 
 #sample angular coordinates on sphere and circle
 coordinatesS2 = get_communities_coordinates_uniform(nb_com, N, sigma)
-coordinatesS1 = project_coordinates_on_circle(coordinatesS2, N)
+coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
 coordinates = [coordinatesS1, coordinatesS2]
-
-#results
-matrices = []
 
 #graph stuff
 beta = 3.5
 mu = 0.01
 average_k = 10.
-rng = np.random.default_rng()
 target_degrees = get_target_degree_sequence(average_k, N, rng, args.degree_distribution) 
 
 #optimization stuff
-tol = 1e-1
-max_iterations = 1000
-perturbation=0.1
-verbose=True
-opt_params = {'tol':tol, 
-            'max_iterations': max_iterations, 
-            'perturbation': perturbation,
-            'verbose':verbose}
+opt_params = {'tol':1e-1, 
+            'max_iterations': 1000, 
+            'perturbation': 0.1,
+            'verbose':True}
 
 #create the SD models
+
+S1, S2 = ModelSD(), ModelSD()
+models = [S1, S2]
+path = 'data/nc-{}-dd-{}-'.format(nb_com, args.degree_distribution)
 for D in [1,2]:
     global_params = get_global_params_dict(N, D, beta*D, mu)
     local_params = {'coordinates':coordinates[D-1], 
@@ -69,14 +73,73 @@ for D in [1,2]:
                     'target_degrees':target_degrees, 
                     'nodes':np.arange(N)}
 
-    SD = ModelSD()
+    SD = models[D-1]
     SD.specify_parameters(global_params, local_params, opt_params)
     SD.set_mu_to_default_value(average_k)
     SD.reassign_parameters()
-
     SD.optimize_kappas(rng)
     SD.reassign_parameters()
-    SD.build_probability_matrix(order=order_array)   
-    matrices.append(SD.probs)
+    SD.build_probability_matrix(order=order)   
+    SD.save_all_parameters_to_file(path+'dim-{}-s{}'.format(D, str(sigma)[0]+str(sigma)[2]))
 
 #plot 
+from mpl_toolkits.mplot3d import Axes3D
+def plot_coordinates(S1, S2):
+    #the sphere
+    phi, theta = np.mgrid[0.0:np.pi:100j, 0.0:2.0*np.pi:100j]
+    x = np.sin(phi)*np.cos(theta)
+    y = np.sin(phi)*np.sin(theta)
+    z = np.cos(phi)
+    #points on the sphere
+    theta, phi = S2.coordinates.T[0], S2.coordinates.T[1]
+    xx = np.sin(phi)*np.cos(theta)
+    yy = np.sin(phi)*np.sin(theta)
+    zz = np.cos(phi)
+    #the plane
+    xp, yp = np.meshgrid(np.linspace(-1, 1, 100), np.linspace(-1, 1, 100))
+    normal = R[:, 2].reshape((1,3))
+    zp = (normal[0,0] * xp + normal[0,1] * yp)/normal[0,2]
+
+    cam = transform_euclidean_to_angular(R[:, 2].reshape((1,3)))*180./np.pi
+    azi, elev = cam[0,0], cam[0,1]-90
+    #plot sphere
+    fig = plt.figure()
+    ax = fig.add_subplot(221, projection='3d')
+    ax.plot_surface(
+        x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
+    ax.plot_surface(
+        xp, yp, zp,  rstride=1, cstride=1, color='k', alpha=0.2, linewidth=0)
+    ax.scatter(xx,yy,zz,color="k",s=10)
+    ax.set_xlim([-1.,1.])
+    ax.set_ylim([-1.,1.])
+    ax.set_zlim([-1.,1.])
+    #ax.view_init(elev=elev, azim=azi)
+    #ax.set_box_aspect((1,1,1))
+    #ax.grid(False)
+    #plt.axis('off')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    #ax.set_xticks([])
+    #ax.set_yticks([])
+    #ax.set_zticks([])
+
+    #plot circle
+    ax = fig.add_subplot(222, projection='polar')
+    ax.plot(np.mod(S1.coordinates.flatten(), 2*np.pi), np.ones(N), 'o', ms=2)
+    plt.ylim(0,1.5)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.axis('off')
+    #plot matrices POULETT
+    ax = fig.add_subplot(223)
+    ax.imshow(np.log10(S2.probs+1e-5))
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax = fig.add_subplot(224)
+    ax.imshow(np.log10(S1.probs+1e-5))
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.tight_layout()
+    plt.show()
+
+plot_coordinates(S1, S2)

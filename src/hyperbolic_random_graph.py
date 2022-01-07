@@ -21,6 +21,12 @@ class ModelSD():
         self.op = OptimizationParameters()
         self.reassign_parameters()
 
+    def specify_parameters(self, global_params, local_params, opt_params):
+        self.gp.specify(global_params)
+        self.lp.specify(local_params)
+        self.op.specify(opt_params)
+        self.reassign_parameters()
+
     def reassign_parameters(self):
         self.N, self.D = self.gp.N, self.gp.dimension
         self.R, self.euclidean = self.gp.radius, self.gp.euclidean
@@ -40,12 +46,12 @@ class ModelSD():
         self.gp.save_to_file(path+'gp.pkl')
         self.lp.save_to_file(path+'lp.pkl')
         self.op.save_to_file(path+'op.pkl')
-        self.reassign_parameters()
 
     def set_mu_to_default_value(self, average_k):
         self.mu = compute_default_mu(self.D, self.beta, average_k)
 
     def optimize_kappas(self, rng):
+        print('Optimizing latent degrees kappas')
         kappas, success = optimize_kappas(rng, self.gp.get_njitable(), self.lp, self.op)
         self.kappas = kappas
         print('Optimization has succeeded : {}'.format(success))

@@ -45,16 +45,36 @@ def get_communities_coordinates_uniform(nb_com, N, sigma):
     thetas, phis = sample_gaussian_clusters_on_sphere(centers, sigmas, sizes)
     return np.column_stack((thetas, phis))
 
-def randomly_rotate_coordinates(coordinates, N, rng):
+def randomly_rotate_coordinates(coordinates, N, rng, reach=np.pi):
     sign = (rng.integers(2)-0.5)*2.
-    x_angle, y_angle, z_angle = rng.random(size=3)*np.pi*sign
+    x_angle, y_angle, z_angle = rng.random(size=3)*reach*sign
     R = get_xyz_rotation_matrix(x_angle, y_angle, z_angle)
     xyz = transform_angular_to_euclidean(coordinates)
     new_coordinates = rotate_euclidean_coordinates(xyz, N, R)
-    return transform_euclidean_to_angular(new_coordinates)
+    return transform_euclidean_to_angular(new_coordinates), R
 
-def project_coordinates_on_circle(coordinates, N):
-    pass
+@njit
+def rms_distance_to_equator(coordinates):
+    phi = coordinates.T[1]
+    return np.sqrt(np.mean(phi**2))
+
+def project_coordinates_on_circle(coordinates, N, rng, verbose=False):
+    rmsd = rms_distance_to_equator(coordinates)
+    out = np.copy(coordinates)
+    h=[]
+    for i in tqdm(range(10000)):
+        new_coordinates, R = randomly_rotate_coordinates(coordinates, N, rng, reach=np.pi)
+        new_rmsd = rms_distance_to_equator(new_coordinates)
+        h.append(new_rmsd)
+        if new_rmsd < rmsd:
+            out = new_coordinates
+            rmsd = new_rmsd
+    if verbose:
+        #plt.hist(h, bins=40)
+        #plt.show()
+        print('Final RMS distance to equator is {}'.format(rmsd))
+    return new_coordinates.T[0].reshape((N,1)), R
+
 
 
 ##tests
@@ -65,7 +85,7 @@ def test_randomly_rotate_coordinates():
     res = np.zeros(nb_tests)
     for i in range(nb_tests):
         c = get_communities_coordinates_uniform(rng.integers(3, 20), N, 0.1)
-        cp = randomly_rotate_coordinates(c, N, rng)
+        cp, R = randomly_rotate_coordinates(c, N, rng)
         d = build_angular_distance_matrix(N, c, D=2, euclidean=False)
         dp = build_angular_distance_matrix(N, cp, D=2, euclidean=False)
         res[i] = np.sum(abs(d-dp))
