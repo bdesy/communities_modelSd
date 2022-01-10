@@ -17,6 +17,7 @@ from geometric_functions import *
 from time import time
 import argparse
 from comS2_util import *
+import os
 
 #parse input arguments
 parser = argparse.ArgumentParser()
@@ -31,6 +32,8 @@ parser.add_argument('-o', '--order', type=bool, default=False,
                         help='whether or not to order the matrix with theta')
 parser.add_argument('-s', '--sigma', type=float,
                         help='dispersion of points of angular clusters in d=1')
+parser.add_argument('-br', '--beta_ratio', type=float,
+                        help='value of beta for d=1')
 args = parser.parse_args() 
 
 N = args.nb_nodes
@@ -40,6 +43,7 @@ if args.order:
     order='theta'
 else:
     order=None
+beta_r = args.beta_ratio
 
 #specify random number generator
 rng = np.random.default_rng()
@@ -50,10 +54,13 @@ coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=
 coordinates = [coordinatesS1, coordinatesS2]
 
 #graph stuff
-beta = 3.5
 mu = 0.01
 average_k = 10.
-target_degrees = get_target_degree_sequence(average_k, N, rng, args.degree_distribution) 
+target_degrees = get_target_degree_sequence(average_k, 
+                                            N, 
+                                            rng, 
+                                            args.degree_distribution,
+                                            sorted=False) 
 
 #optimization stuff
 opt_params = {'tol':1e-1, 
@@ -65,9 +72,14 @@ opt_params = {'tol':1e-1,
 
 S1, S2 = ModelSD(), ModelSD()
 models = [S1, S2]
-path = 'data/nc-{}-dd-{}-'.format(nb_com, args.degree_distribution)
+path = 'data/nc-{}-dd-{}-s{}-b{}'.format(nb_com, 
+                                        args.degree_distribution, 
+                                        str(sigma)[0]+str(sigma)[2], 
+                                        int(beta_r))
+os.mkdir(path)
+path+='/'
 for D in [1,2]:
-    global_params = get_global_params_dict(N, D, beta*D, mu)
+    global_params = get_global_params_dict(N, D, beta_r*D, mu)
     local_params = {'coordinates':coordinates[D-1], 
                     'kappas': target_degrees+1e-3, 
                     'target_degrees':target_degrees, 
@@ -79,12 +91,12 @@ for D in [1,2]:
     SD.reassign_parameters()
     SD.optimize_kappas(rng)
     SD.reassign_parameters()
-    SD.build_probability_matrix(order=order)   
-    SD.save_all_parameters_to_file(path+'dim-{}-s{}'.format(D, str(sigma)[0]+str(sigma)[2]))
+    SD.build_probability_matrix(order=order) 
+    SD.save_all_parameters_to_file(path+'S{}-'.format(D))
 
 #plot 
 from mpl_toolkits.mplot3d import Axes3D
-def plot_coordinates(S1, S2):
+def plot_coordinates(S1, S2, save='fig'):
     #the sphere
     phi, theta = np.mgrid[0.0:np.pi:100j, 0.0:2.0*np.pi:100j]
     x = np.sin(phi)*np.cos(theta)
@@ -140,6 +152,7 @@ def plot_coordinates(S1, S2):
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()
+    plt.savefig(save, dpi=600)
     plt.show()
 
-plot_coordinates(S1, S2)
+plot_coordinates(S1, S2, save=path+'fig')

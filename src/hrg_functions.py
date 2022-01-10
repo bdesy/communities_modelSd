@@ -23,9 +23,9 @@ def compute_default_mu(D, beta, average_kappa):
 
 @njit
 def compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, global_parameters):
-    assert kappa_i * kappa_j > 0., 'kappa is not strictly positive'
-    assert mu > 0. 'mu is not strictly positive'
     D, N, mu, beta, R, euclidean = global_parameters
+    assert kappa_i * kappa_j > 0., 'kappa is not strictly positive'
+    assert mu > 0., 'mu is not strictly positive'
     chi = R * compute_angular_distance(coord_i, coord_j, D, euclidean)
     chi /= (mu * kappa_i * kappa_j)**(1./D)
     return 1./(1. + chi**beta)
