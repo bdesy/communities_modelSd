@@ -58,6 +58,7 @@ def optimize_kappas(rng, global_params, local_params, opt_params):
         epsilon_m = np.max(np.array([np.max(deviations), abs(np.min(deviations))]))
         if abs(epsilon_m - epsilon)<1e-6:
             stuck += 1
+            print('stuck', stuck)
         epsilon = epsilon_m
         factor = 1
         m += 1
@@ -65,7 +66,7 @@ def optimize_kappas(rng, global_params, local_params, opt_params):
             print(m, epsilon)
         if stuck > 20:
             sign =  (rng.integers(2) - 0.5) * 2
-            kappas += rng.random(size=(N,)) * perturbation * sign
+            kappas += rng.random(size=(N,)) * sign
             stuck = 0
     if m>max_iterations:
         success = False
