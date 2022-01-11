@@ -49,6 +49,7 @@ class ModelSD():
 
     def set_mu_to_default_value(self, average_k):
         self.mu = compute_default_mu(self.D, self.beta, average_k)
+        self.gp.mu = self.mu
 
     def optimize_kappas(self, rng):
         print('Optimizing latent degrees kappas')
