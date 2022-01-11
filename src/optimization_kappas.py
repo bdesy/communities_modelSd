@@ -67,8 +67,9 @@ def optimize_kappas(rng, global_params, local_params, opt_params):
         if stuck > 20:
             sign =  (rng.integers(2) - 0.5) * 2
             kappas += rng.random(size=(N,)) * sign
+            kappas = np.absolute(kappas)
             stuck = 0
-    if m>max_iterations:
+    if m>=max_iterations:
         success = False
         print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
     else:

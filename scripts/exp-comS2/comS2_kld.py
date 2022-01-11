@@ -112,7 +112,7 @@ def plot_matrices(a, b, D, beta, filepath):
     plt.xticks([])
     plt.yticks([])
     plt.savefig(filepath)
-    plt.show()
+    #plt.show()
     plt.clf() 
 
 #parse input 
@@ -181,7 +181,9 @@ for beta_r in beta_list:
         average_sbm_probs /= nb_adj
         if explicit:
             #fp = str('../data/kld/figures_ordered/av_S{}_beta{}.png'.format(D, beta))
-            plot_matrices(SD.probs, average_sbm_probs, D, beta, 'truc') 
+            fp = 'data/kld/'+key
+            fp = fp.replace('.', '')
+            plot_matrices(SD.probs, average_sbm_probs, D, beta, fp) 
             #np.save('../data/kld/figures_ordered/av_S{}_beta{}_dcsbm'.format(D, beta), average_sbm_probs/nb_adj)
             #np.save('../data/kld/figures_ordered/av_S{}_beta{}_sd'.format(D, beta), SD.probs)
         res[key] = kld_dist
