@@ -9,7 +9,7 @@ Date : 03/01/2022
 """
 
 from abc import ABC, abstractmethod
-import pickle
+import json
 
 class Parameters(ABC):
     @abstractmethod
@@ -18,12 +18,12 @@ class Parameters(ABC):
 
     def load_from_file(self, path_to_dict):
         with open(path_to_dict, 'rb') as file:
-            dictionary = pickle.load(file)
+            dictionary = json.load(file)
         self.specify(dictionary)
 
     def save_to_file(self, path_for_dict):
-        with open(path_for_dict, 'wb') as file:
-            pickle.dump(vars(self), file)
+        with open(path_for_dict+'.json', 'w') as file:
+            json.dump(vars(self), file, indent=4)
 
 class GlobalParameters(Parameters):
     def __init__(self):
@@ -82,9 +82,9 @@ if __name__ == '__main__':
                  'beta': 3.5, 'euclidean': False, 'radius': 159.14}
     gp = GlobalParameters()
     gp.specify(test_dico)
-    gp.save_to_file('test_file.pkl')
+    gp.save_to_file('test_file')
     gpp = GlobalParameters()
-    gpp.load_from_file('test_file.pkl')
+    gpp.load_from_file('test_file.json')
     print(vars(gpp))
 
     @njit
