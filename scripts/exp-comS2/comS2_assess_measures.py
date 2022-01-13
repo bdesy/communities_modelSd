@@ -36,22 +36,37 @@ parser.add_argument('-br', '--beta_ratio', type=float,
                         help='value of beta for d=1')
 args = parser.parse_args() 
 
+def get_order_theta_within_communities(SD, sizes):
+    theta = SD.coordinates.T[0]
+    i = 0
+    order = np.argsort(theta[i:sizes[0]]).tolist()
+    i += sizes[0]
+    for s in sizes[1:]:
+        order_s = (np.argsort(theta[i:i+s])+i).tolist()
+        order += order_s
+        i += s
+    assert set(np.arange(N).tolist())==set(order), 'not all indices in order'
+    return np.array(order)
+
+@njit
+def hadamard_distance(a, b, N):
+    had = a*b / (b*b)
+    return 2*had / (N*(N-1))
+
 N = args.nb_nodes
 nb_com = args.nb_communities
 sigma = args.sigma
-if args.order:
-    order='theta'
-else:
-    order=None
 beta_r = args.beta_ratio
 
 #specify random number generator
 rng = np.random.default_rng()
 
 #sample angular coordinates on sphere and circle
-coordinatesS2 = get_communities_coordinates(nb_com, N, get_sigma_d(sigma, 2), place='uniformly')
-coordinatesS1 = (get_communities_coordinates(nb_com, N, sigma, place='equator').T[0]).reshape((N, 1))
+coordinatesS2 = get_communities_coordinates(nb_com, N, get_sigma_d(sigma, 2), place='randomly')
+#coordinatesS1 = (get_communities_coordinates(nb_com, N, sigma, place='equator').T[0]).reshape((N, 1))
+coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
 coordinates = [coordinatesS1, coordinatesS2]
+sizes = get_equal_communities_sizes(nb_com, N)
 
 #graph stuff
 mu = 0.01
@@ -61,6 +76,7 @@ target_degrees = get_target_degree_sequence(average_k,
                                             rng, 
                                             args.degree_distribution,
                                             sorted=False) 
+print(np.max(target_degrees), 'max target degree')
 
 #optimization stuff
 opt_params = {'tol':1e-1, 
@@ -72,10 +88,11 @@ opt_params = {'tol':1e-1,
 
 S1, S2 = ModelSD(), ModelSD()
 models = [S1, S2]
-path = 'data/assess/nc-{}-dd-{}-s{}-b{}'.format(nb_com, 
+path = 'data/assess/nc-{}-dd-{}-s{}-b{}-o{}'.format(nb_com, 
                                         args.degree_distribution, 
                                         str(sigma)[0]+str(sigma)[2], 
-                                        int(beta_r))
+                                        int(beta_r),
+                                        int(args.order))
 os.mkdir(path)
 path+='/'
 for D in [1,2]:
@@ -89,9 +106,16 @@ for D in [1,2]:
     SD.specify_parameters(global_params, local_params, opt_params)
     SD.set_mu_to_default_value(average_k)
     SD.reassign_parameters()
+    
     SD.optimize_kappas(rng)
     SD.reassign_parameters()
+
+    if args.order:
+        order = get_order_theta_within_communities(SD, sizes)
+    else:
+        order = None
     SD.build_probability_matrix(order=order) 
+    SD.dcSBM, SD.communities = get_dcsbm_matrix(N, sizes, SD.probs)
     SD.save_all_parameters_to_file(path+'S{}-'.format(D))
 
 #plot 
@@ -109,10 +133,13 @@ def plot_coordinates(S1, S2, save='fig'):
     zz = np.cos(phi)
     #plot sphere
     fig = plt.figure()
-    ax = fig.add_subplot(221, projection='3d')
+    ax = fig.add_subplot(321, projection='3d')
     ax.plot_surface(
         x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
-    ax.scatter(xx,yy,zz,color="k",s=10)
+    for c in range(nb_com):
+        color = plt.cm.tab10(c)
+        nodes = np.where(S2.communities==c)
+        ax.scatter(xx[nodes],yy[nodes],zz[nodes],color=color,s=10)
     ax.set_xlim([-1.,1.])
     ax.set_ylim([-1.,1.])
     ax.set_zlim([-1.,1.])
@@ -127,19 +154,33 @@ def plot_coordinates(S1, S2, save='fig'):
     #ax.set_zticks([])
 
     #plot circle
-    ax = fig.add_subplot(222, projection='polar')
-    ax.plot(np.mod(S1.coordinates.flatten(), 2*np.pi), np.ones(N), 'o', ms=2)
+    ax = fig.add_subplot(322, projection='polar')
+    theta = np.mod(S1.coordinates.flatten(), 2*np.pi)
+    for c in range(nb_com):
+        color = plt.cm.tab10(c)
+        nodes = np.where(S2.communities==c)
+        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=10)
+    #ax.plot(, , 'o', ms=2)
     plt.ylim(0,1.5)
     ax.set_xticks([])
     ax.set_yticks([])
     plt.axis('off')
     #plot matrices POULETT
-    ax = fig.add_subplot(223)
+    ax = fig.add_subplot(323)
     ax.imshow(np.log10(S2.probs+1e-5))
     ax.set_xticks([])
     ax.set_yticks([])
-    ax = fig.add_subplot(224)
+    ax = fig.add_subplot(324)
     ax.imshow(np.log10(S1.probs+1e-5))
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    ax = fig.add_subplot(325)
+    ax.imshow(np.log10(S2.dcSBM+1e-5))
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax = fig.add_subplot(326)
+    ax.imshow(np.log10(S1.dcSBM+1e-5))
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()

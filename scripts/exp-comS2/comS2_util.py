@@ -79,7 +79,58 @@ def project_coordinates_on_circle(coordinates, N, rng, verbose=False):
         print('Final RMS distance to equator is {}'.format(rmsd))
     return new_coordinates.T[0].reshape((N,1)), R
 
+@njit
+def KLD(p, q):
+    mat = p * np.where(p*q>1e-14, np.log2(p/q), 0)
+    mat += (1.-p) * np.where((1.-p)*(1.-q)>1e-14, np.log2((1.-p)/(1.-q)), 0)
+    return np.sum(np.triu(mat))
 
+@njit
+def KLD_per_edge(p, q):
+    n = p.shape[0]
+    out = KLD(p, q)
+    return out / (n*(n-1)/2)
+
+@njit
+def quick_build_sbm_matrix(n, comms_array, degree_seq, kappas, block_mat):
+    probs = np.zeros((n,n))
+    for i in range(n):
+        for j in range(i):
+            r, s = comms_array[i], comms_array[j]
+            p_ij = degree_seq[i]*degree_seq[j]
+            p_ij /= (kappas[r]*kappas[s])
+            p_ij *= block_mat[r, s]
+            probs[i,j] = p_ij
+    probs_sym = probs + probs.T
+    return np.where(probs_sym>1., 1., probs_sym)
+
+def get_ordered_homemade_sbm(n, sizes, adj):
+    comms_array = np.zeros(n, dtype=int)
+    i, c = 0, 0
+    nc = len(sizes)
+    ig = []
+    for g in range(nc):
+        ig.append(i)
+        comms_array[i:i+sizes[g]] = c
+        i+=sizes[g]
+        c+=1
+    block_mat = np.zeros((nc, nc))
+    for j in range(nc):
+        indices_j = np.argwhere(comms_array==j)
+        j_i, j_f = ig[j], ig[j]+sizes[j]
+        for k in range(nc):
+            indices_k = np.argwhere(comms_array==k)
+            k_i, k_f = ig[k], ig[k]+sizes[k]
+            block_mat[j,k] = np.sum(adj[j_i:j_f, k_i:k_f])
+
+    kappas = np.sum(block_mat, axis=1)
+    return comms_array, kappas, block_mat
+
+def get_dcsbm_matrix(n, sizes, adj):
+    comms_array, kappas, block_mat = get_ordered_homemade_sbm(n, sizes, adj)
+    degree_seq = np.sum(adj, axis=1)
+    dcSBM = quick_build_sbm_matrix(n, comms_array, degree_seq, kappas, block_mat)
+    return dcSBM, comms_array
 
 ##tests
 def test_randomly_rotate_coordinates():

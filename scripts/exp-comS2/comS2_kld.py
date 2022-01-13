@@ -46,7 +46,7 @@ def quick_build_sbm_matrix(n, comms_array, degree_seq, kappas, block_mat, order)
     probs_sym = probs + probs.T
     return np.where(probs_sym>1., 1., probs_sym)
 
-def get_ordered_homemade_sbm(n, sizes, adj, order): ##Gérer le fait que la matrice est ptêt pas ordonnée
+def get_ordered_homemade_sbm(n, sizes, adj, order):
     comms_array = np.zeros(n, dtype=int)
     i, c = 0, 0
     nc = len(sizes)
@@ -68,17 +68,6 @@ def get_ordered_homemade_sbm(n, sizes, adj, order): ##Gérer le fait que la matr
     kappas = np.sum(block_mat, axis=1)
     return comms_array[order], kappas, block_mat
 
-@njit
-def KLD(p, q):
-    mat = p * np.where(p*q>1e-14, np.log2(p/q), 0)
-    mat += (1.-p) * np.where((1.-p)*(1.-q)>1e-14, np.log2((1.-p)/(1.-q)), 0)
-    return np.sum(np.triu(mat))
-
-@njit
-def KLD_per_edge(p, q):
-    n = p.shape[0]
-    out = KLD(p, q)
-    return out / (n*(n-1)/2)
 
 def get_cluster_coordinates_on_circle(N, nb_communities):
     theta_centers = np.linspace(0, 2*np.pi, nb_communities, endpoint=False)
