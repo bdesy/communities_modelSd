@@ -31,6 +31,10 @@ def place_modes_coordinates_on_sphere(nb_com, place='uniformly'):
         coordinates = sample_from_fibonacci_sphere(nb_com)
     elif place=='randomly':
         coordinates = sample_uniformly_on_hypersphere(nb_com, dimension=2)
+    elif place=='equator':
+        theta = np.linspace(0, 2*np.pi, nb_com, endpoint=False)
+        phi = np.ones(theta.shape)*np.pi/2
+        coordinates = np.column_stack((theta, phi))
     return coordinates
 
 def get_equal_communities_sizes(nb_com, N):
@@ -38,9 +42,9 @@ def get_equal_communities_sizes(nb_com, N):
     sizes[0] += (N - int(np.sum(np.array(sizes))))
     return sizes
 
-def get_communities_coordinates_uniform(nb_com, N, sigma):
+def get_communities_coordinates(nb_com, N, sigma, place):
     sizes = get_equal_communities_sizes(nb_com, N)
-    centers = place_modes_coordinates_on_sphere(nb_com, place='uniformly')
+    centers = place_modes_coordinates_on_sphere(nb_com, place=place)
     sigmas = np.ones(nb_com)*sigma
     thetas, phis = sample_gaussian_clusters_on_sphere(centers, sigmas, sizes)
     return np.column_stack((thetas, phis))

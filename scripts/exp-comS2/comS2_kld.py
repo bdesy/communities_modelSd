@@ -187,6 +187,7 @@ for beta_r in beta_list:
             #np.save('../data/kld/figures_ordered/av_S{}_beta{}_dcsbm'.format(D, beta), average_sbm_probs/nb_adj)
             #np.save('../data/kld/figures_ordered/av_S{}_beta{}_sd'.format(D, beta), SD.probs)
         res[key] = kld_dist
+        print(kld_dist)
 
 
 filepath = 'data/kld/test_'+filename
