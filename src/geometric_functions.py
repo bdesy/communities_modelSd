@@ -138,9 +138,9 @@ def sample_uniformly_on_hypersphere(N, dimension):
     elif dimension > 2.5:
         coordinates = np.zeros((N, dimension+1))
         for i in range(N):
-            pos = np.zeros(D+1)
+            pos = np.zeros(dimension+1)
             while np.linalg.norm(pos) < 1e-4:
-                pos = np.random.normal(size=D+1)
+                pos = np.random.normal(size=dimension+1)
             coordinates[i] = pos / np.linalg.norm(pos)
     return coordinates
 
