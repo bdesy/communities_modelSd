@@ -17,11 +17,14 @@ from scipy.integrate import quad, RK45
 from tqdm import tqdm
 
 import sys
-sys.path.insert(0, '../src/')
-from hyperbolic_random_graphs import *
+sys.path.insert(0, '../../src/')
+from hyperbolic_random_graph import *
+from hrg_functions import *
 
 from math import factorial, gamma
 from scipy.special import hyp2f1
+
+from util import *
 
 font = {'size'   : 13}
 
@@ -29,54 +32,6 @@ matplotlib.rc('font', **font)
 
 cmap = matplotlib.cm.get_cmap('viridis')
 
-def compute_eta(kappa_i, kappa_j, mu, R, D):
-    return mu*kappa_i*kappa_j/(R**D)
-
-def connection_prob(Dtheta, kappa_i, kappa_j, D, beta, R, mu):
-    chi = R * Dtheta
-    chi /= (mu * kappa_i * kappa_j)**(1./D)
-    return 1./(1 + chi**beta)
-
-def integrand(Dtheta, kappa_i, kappa_j, D, beta, R, mu):
-    a = connection_prob(Dtheta, kappa_i, kappa_j, D, beta, R, mu)
-    b = np.sin(Dtheta)**(D-1)
-    return a*b
-
-def integrand_eta(theta, D, beta, eta):
-    a = 1 / (1 + (theta**D / eta)**(beta/D))
-    b = np.sin(theta)**(D-1)
-    return a*b
-
-def integrated_connection_prob_eta(D, beta, eta):
-    args = (D, beta, eta)
-    out = quad(integrand_eta, 0, np.pi, args=args)
-    return out
-
-def integrated_connection_prob(kappa_i, kappa_j, D, beta, R=1, mu=1):
-    args = (kappa_i, kappa_j, D, beta, R, mu)
-    if D>1 :
-        out = quad(integrand, 0, np.pi, args=args)
-    elif D==1:
-        out = quad(integrand, 0, np.pi, args=args)
-    return out
-
-def alpha(R, kappa_i, kappa_j, mu, D):
-    num = (mu*kappa_i*kappa_j)**(1./D)
-    return num / R
-
-def default_mu(D, beta, average_kappa):
-    if beta < D:
-        print('Default value for mu is not valid if beta < D')
-    else: 
-        mu = gamma((D+1)/2.) * np.sin((D+1)*np.pi/beta) * beta
-        mu /= np.pi**((D+2)/2)
-        mu /= (2*average_kappa*(D+1))
-    return mu
-
-def normalization_2f1(D, beta, eta):
-    tau = D/beta
-    um = (np.pi**D)/eta
-    return eta * um * hyp2f1(1., tau, 1.+tau, -um**(1./tau)) / D
 
 
 Dthetas = np.linspace(1e-5, np.pi, 100000)
@@ -88,7 +43,7 @@ average_kappa = 10.
 for D in range(10, 0, -1):
     beta = ratio * D
     R = compute_radius(N, D)
-    mu = default_mu(D, beta, average_kappa)
+    mu = compute_default_mu(D, beta, average_kappa)
 
     rho = np.sin(Dthetas)**(D-1)
     pij = connection_prob(Dthetas, kappa_i, kappa_j, D, beta, R=R, mu=mu)
