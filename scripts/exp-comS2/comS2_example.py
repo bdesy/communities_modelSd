@@ -21,7 +21,7 @@ import os
 
 #parse input arguments
 parser = argparse.ArgumentParser()
-parser.add_argument('-n', '--nb_nodes', type=int,
+parser.add_argument('-n', '--nb_nodes', type=int, default=1000,
                         help='number of nodes in the graph')
 parser.add_argument('-nc', '--nb_communities', type=int,
                         help='number of communities to put on the sphere')
@@ -49,7 +49,7 @@ beta_r = args.beta_ratio
 rng = np.random.default_rng()
 
 #sample angular coordinates on sphere and circle
-coordinatesS2 = get_communities_coordinates_uniform(nb_com, N, sigma)
+coordinatesS2 = get_communities_coordinates(nb_com, N, sigma, place='uniformly')
 coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
 coordinates = [coordinatesS1, coordinatesS2]
 
