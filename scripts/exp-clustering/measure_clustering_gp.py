@@ -29,7 +29,8 @@ def get_correct_mu(SD, target_average_degree, tol):
     SD.build_probability_matrix()
     av_degree = np.mean(np.sum(SD.probs, axis=1))
     while abs(target_average_degree - av_degree)>tol:
-        perturbation = (target_average_degree-av_degree)/target_average_degree*SD.mu
+        norm = np.max(np.array([target_average_degree, av_degree]))
+        perturbation = (target_average_degree-av_degree)/norm*SD.mu
         SD.gp.mu += perturbation
         SD.mu += perturbation
         SD.build_probability_matrix()
@@ -40,7 +41,7 @@ gammas = [2.1, 2.325, 2.55, 2.775, 3.0]
 
 N = 1000
 beta = 1000.
-nb_adj = 1
+nb_adj = 100
 average_k = 10.
 
 rng = np.random.default_rng()
@@ -65,28 +66,25 @@ for D in dimensions:
     for y in gammas:
         key = 'S{}_gamma{}'.format(D, y)
         print(key)
+        dist=[]
 
         SD = ModelSD()
-        tg = get_target_degree_sequence(average_k, 
+        for i in tqdm(range(nb_adj)):
+            tg = get_target_degree_sequence(average_k, 
                                         N, 
                                         rng, 
                                         'pwl', y=y,
                                         sorted=False)
-        local_params = {'coordinates':sample_uniformly_on_hypersphere(N, D),
+            local_params = {'coordinates':sample_uniformly_on_hypersphere(N, D),
                         'kappas':tg+1e-3,
                         'nodes':np.arange(N),
                         'target_degrees':tg}
-        SD.specify_parameters(global_params, local_params, opt_params)
-
-        
-        get_correct_mu(SD, 10., tol=0.1)
-        SD.build_probability_matrix()
-        print('final mu', SD.mu, 'average degree', np.mean(np.sum(SD.probs, axis=1)))
-        print('')
-        dist=[]
-        for i in tqdm(range(nb_adj)):
+            SD.specify_parameters(global_params, local_params, opt_params)
+            get_correct_mu(SD, 10., tol=0.1)
+            SD.build_probability_matrix()
             A = SD.sample_random_matrix().astype(float)
             dist.append(mean_local_clustering(A, N))
+
         dist = np.array(dist)
         res[key] = (np.mean(dist), np.std(dist))
 

@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pickle
 from matplotlib import rc
-rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+rc('font',**{'serif':['Computer Modern Roman'], 'size':14})
 rc('text', usetex=True)
 
 dimensions = np.arange(1,11)
@@ -20,16 +20,19 @@ gammas = [2.1, 2.325, 2.55, 2.775, 3.0]
 markers = ['s', '^', 'D', '*', 's']
 colors = ['blueviolet', 'dodgerblue', 'turquoise', 'lightgreen', 'darkorange']
 
-with open('test', 'rb') as file:
+with open('figure2', 'rb') as file:
     res = pickle.load(file)
 
+plt.figure(figsize=(7,5))
 i=0
 for y in gammas:
     data = []
     for D in dimensions:
         key = 'S{}_gamma{}'.format(D, y)
         data.append(res[key])
-    plt.plot(dimensions, data, 
+    data = np.array(data)
+    plt.errorbar(dimensions, data.T[0], 
+    		yerr=data.T[1], elinewidth=1., capsize=2.,
             marker=markers[i], mec='k', mew=0.4,
             c=colors[i], 
             linewidth=2,
@@ -39,8 +42,8 @@ plt.legend()
 plt.ylim(0.2, 0.9)
 plt.xlim(1, 10)
 plt.xticks(dimensions.tolist())
-#plt.ylabel(r'$\bar{c}_{\text{max}}$')
-plt.xlabel(r'D')
+plt.ylabel(r'$\bar{c}_{\mathrm{max}}$')
+plt.xlabel(r'$D$')
 plt.show()
 
 
