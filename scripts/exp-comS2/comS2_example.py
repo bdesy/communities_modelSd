@@ -39,10 +39,6 @@ args = parser.parse_args()
 N = args.nb_nodes
 nb_com = args.nb_communities
 sigma = args.sigma
-if args.order:
-    order='theta'
-else:
-    order=None
 beta_r = args.beta_ratio
 
 #specify random number generator
@@ -52,6 +48,7 @@ rng = np.random.default_rng()
 coordinatesS2 = get_communities_coordinates(nb_com, N, sigma, place='uniformly')
 coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
 coordinates = [coordinatesS1, coordinatesS2]
+sizes = get_equal_communities_sizes(nb_com, N)
 
 #graph stuff
 mu = 0.01
@@ -72,7 +69,7 @@ opt_params = {'tol':1e-1,
 
 S1, S2 = ModelSD(), ModelSD()
 models = [S1, S2]
-path = 'data/nc-{}-dd-{}-s{}-b{}'.format(nb_com, 
+path = 'data/example/nc-{}-dd-{}-s{}-b{}'.format(nb_com, 
                                         args.degree_distribution, 
                                         str(sigma)[0]+str(sigma)[2], 
                                         int(beta_r))
@@ -91,7 +88,12 @@ for D in [1,2]:
     SD.reassign_parameters()
     SD.optimize_kappas(rng)
     SD.reassign_parameters()
+    if args.order:
+        order = get_order_theta_within_communities(SD, sizes)
+    else:
+        order=None
     SD.build_probability_matrix(order=order) 
+    SD.dcSBM, SD.communities = get_dcsbm_matrix(N, sizes, SD.probs)
     SD.save_all_parameters_to_file(path+'S{}-'.format(D))
 
 #plot 
@@ -121,7 +123,10 @@ def plot_coordinates(S1, S2, save='fig'):
         x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
     ax.plot_surface(
         xp, yp, zp,  rstride=1, cstride=1, color='k', alpha=0.2, linewidth=0)
-    ax.scatter(xx,yy,zz,color="k",s=10)
+    for c in range(nb_com):
+        color = plt.cm.tab10(c)
+        nodes = np.where(S2.communities==c)
+        ax.scatter(xx[nodes],yy[nodes],zz[nodes],color=color,s=10)
     ax.set_xlim([-1.,1.])
     ax.set_ylim([-1.,1.])
     ax.set_zlim([-1.,1.])
@@ -137,7 +142,11 @@ def plot_coordinates(S1, S2, save='fig'):
 
     #plot circle
     ax = fig.add_subplot(222, projection='polar')
-    ax.plot(np.mod(S1.coordinates.flatten(), 2*np.pi), np.ones(N), 'o', ms=2)
+    for c in range(nb_com):
+        color = plt.cm.tab10(c)
+        nodes = np.where(S2.communities==c)
+        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=10)
+
     plt.ylim(0,1.5)
     ax.set_xticks([])
     ax.set_yticks([])

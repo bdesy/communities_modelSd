@@ -36,7 +36,7 @@ cmap = matplotlib.cm.get_cmap('viridis')
 
 Dthetas = np.linspace(1e-5, np.pi, 100000)
 kappa_i, kappa_j = 10., 10.
-ratio = 2.5
+ratio = 1.000000000000001
 N = 10000
 average_kappa = 10.
 
@@ -44,6 +44,7 @@ for D in range(10, 0, -1):
     beta = ratio * D
     R = compute_radius(N, D)
     mu = compute_default_mu(D, beta, average_kappa)
+    print(mu, 'mu')
 
     rho = np.sin(Dthetas)**(D-1)
     pij = connection_prob(Dthetas, kappa_i, kappa_j, D, beta, R=R, mu=mu)

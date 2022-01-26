@@ -15,7 +15,7 @@ sys.path.insert(0, '../../src/')
 from hyperbolic_random_graph import *
 from hrg_functions import *
 from geometric_functions import *
-
+from tqdm import tqdm
 import argparse
 from util import *
 
@@ -62,20 +62,26 @@ Dtheta = SD.angular_distance_matrix
 
 dist = []
 
-for i in range(10):
+for i in tqdm(range(1000)):
 	A = SD.sample_random_matrix()
 	m = np.sum(np.triu(A))
 	connected_angular_distances = np.triu(A*Dtheta)
 	for ind in np.argwhere(connected_angular_distances>0.):
 		dist.append(connected_angular_distances[ind[0], ind[1]])
 
-plt.hist(dist, bins=100, density=True, alpha=0.5, color='darkcyan')
+plt.hist(dist, bins=200, density=True, alpha=0.5, color='darkcyan')
+
+#from scipy.special import gamma
+#def denum_independent(d):
+#	out = np.sqrt(np.pi)*gamma(d/2)
+#	return out/gamma((d+1)/2)
 
 Dthetas = np.linspace(1e-5, np.pi, 1000)
 rho = np.sin(Dthetas)**(D-1)
 pij = connection_prob(Dthetas, kappa, kappa, D, beta, R=SD.R, mu=SD.mu)
 denum, error = integrated_connection_prob(kappa, kappa, D, beta, mu=SD.mu, R=SD.R)
 plt.plot(Dthetas, pij*rho/denum, color='darkcyan')
+#plt.plot(Dthetas, pij*rho/denum_independent(D), color='k')
 
 plt.show()
 

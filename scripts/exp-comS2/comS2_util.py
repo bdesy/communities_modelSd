@@ -20,6 +20,18 @@ from geometric_functions import *
 
 from time import time
 
+def get_order_theta_within_communities(SD, sizes):
+    theta = SD.coordinates.T[0]
+    i = 0
+    order = np.argsort(theta[i:sizes[0]]).tolist()
+    i += sizes[0]
+    for s in sizes[1:]:
+        order_s = (np.argsort(theta[i:i+s])+i).tolist()
+        order += order_s
+        i += s
+    assert set(np.arange(SD.N).tolist())==set(order), 'not all indices in order'
+    return np.array(order)
+
 def sample_from_fibonacci_sphere(n):
     indices = np.arange(0, n, dtype=float) + 0.5
     phi = np.arccos(1 - 2*indices/n)
