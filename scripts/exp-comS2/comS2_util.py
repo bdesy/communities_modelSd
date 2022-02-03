@@ -116,6 +116,16 @@ def quick_build_sbm_matrix(n, comms_array, degree_seq, kappas, block_mat):
     probs_sym = probs + probs.T
     return np.where(probs_sym>1., 1., probs_sym)
 
+def get_communities_array(n, sizes):
+    comms_array = np.zeros(n, dtype=int)
+    nc = len(sizes)
+    i, c = 0, 0
+    for g in range(nc):
+        comms_array[i:i+sizes[g]] = c
+        i+=sizes[g]
+        c+=1
+    return comms_array
+
 def get_ordered_homemade_sbm(n, sizes, adj):
     comms_array = np.zeros(n, dtype=int)
     i, c = 0, 0

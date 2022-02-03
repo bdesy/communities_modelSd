@@ -57,11 +57,14 @@ def get_target_degree_sequence(average_degree, N, rng, dist, sorted=True, y=2.5)
         k_0 = (y-2) * average_degree / (y-1)
         a = y - 1.
         target_degrees = k_0 / rng.random(N)**(1./a)
+        while np.max(target_degrees)>(N-1):
+            i = np.argmax(target_degrees)
+            target_degrees[i] = k_0 / rng.random()**(1./a)
     elif dist=='poisson':
         target_degrees = rng.poisson(average_degree-1., N)+1.
     elif dist=='exp':
         target_degrees = rng.exponential(scale=average_degree-1., size=N)+1.
-        
+
     if sorted:
         target_degrees[::-1].sort()  
     

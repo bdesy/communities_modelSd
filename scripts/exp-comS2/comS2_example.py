@@ -34,6 +34,9 @@ parser.add_argument('-s', '--sigma', type=float,
                         help='dispersion of points of angular clusters in d=1')
 parser.add_argument('-br', '--beta_ratio', type=float,
                         help='value of beta for d=1')
+parser.add_argument('-cs', '--coordinates_S1', type=str, default='projection',
+                        choices=['projection', 'uniformly'],
+                        help='how to place the coordinates on S1')
 args = parser.parse_args() 
 
 N = args.nb_nodes
@@ -45,8 +48,11 @@ beta_r = args.beta_ratio
 rng = np.random.default_rng()
 
 #sample angular coordinates on sphere and circle
-coordinatesS2 = get_communities_coordinates(nb_com, N, sigma, place='uniformly')
-coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
+coordinatesS2 = get_communities_coordinates(nb_com, N, get_sigma_d(sigma, 2), place='uniformly')
+if args.coordinates_S1=='projection':
+    coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
+elif args.coordinates_S1=='uniformly':
+    coordinatesS1 = (get_communities_coordinates(nb_com, N, sigma, place='equator').T[0]).reshape((N, 1))
 coordinates = [coordinatesS1, coordinatesS2]
 sizes = get_equal_communities_sizes(nb_com, N)
 
@@ -69,10 +75,10 @@ opt_params = {'tol':1e-1,
 
 S1, S2 = ModelSD(), ModelSD()
 models = [S1, S2]
-path = 'data/example/nc-{}-dd-{}-s{}-b{}'.format(nb_com, 
+path = 'data/example/nc-{}-dd-{}-s{}-b{}-s1-'.format(nb_com, 
                                         args.degree_distribution, 
                                         str(sigma)[0]+str(sigma)[2], 
-                                        int(beta_r))
+                                        int(beta_r))+args.coordinates_S1
 os.mkdir(path)
 path+='/'
 for D in [1,2]:
@@ -109,20 +115,22 @@ def plot_coordinates(S1, S2, save='fig'):
     xx = np.sin(phi)*np.cos(theta)
     yy = np.sin(phi)*np.sin(theta)
     zz = np.cos(phi)
-    #the plane
-    xp, yp = np.meshgrid(np.linspace(-1, 1, 100), np.linspace(-1, 1, 100))
-    normal = R[:, 2].reshape((1,3))
-    zp = (normal[0,0] * xp + normal[0,1] * yp)/normal[0,2]
 
-    cam = transform_euclidean_to_angular(R[:, 2].reshape((1,3)))*180./np.pi
-    azi, elev = cam[0,0], cam[0,1]-90
     #plot sphere
     fig = plt.figure()
     ax = fig.add_subplot(221, projection='3d')
     ax.plot_surface(
         x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
-    ax.plot_surface(
-        xp, yp, zp,  rstride=1, cstride=1, color='k', alpha=0.2, linewidth=0)
+    if args.coordinates_S1=='projection':
+        #the plane
+        xp, yp = np.meshgrid(np.linspace(-1, 1, 100), np.linspace(-1, 1, 100))
+        normal = R[:, 2].reshape((1,3))
+        zp = (normal[0,0] * xp + normal[0,1] * yp)/normal[0,2]
+
+        cam = transform_euclidean_to_angular(R[:, 2].reshape((1,3)))*180./np.pi
+        azi, elev = cam[0,0], cam[0,1]-90    
+        ax.plot_surface(
+            xp, yp, zp,  rstride=1, cstride=1, color='k', alpha=0.2, linewidth=0)
     for c in range(nb_com):
         color = plt.cm.tab10(c)
         nodes = np.where(S2.communities==c)
@@ -144,8 +152,8 @@ def plot_coordinates(S1, S2, save='fig'):
     ax = fig.add_subplot(222, projection='polar')
     for c in range(nb_com):
         color = plt.cm.tab10(c)
-        nodes = np.where(S2.communities==c)
-        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=10)
+        nodes = np.where(S1.communities==c)
+        ax.scatter(S1.coordinates.T[0][nodes],np.ones(N)[nodes],color=color,s=10)
 
     plt.ylim(0,1.5)
     ax.set_xticks([])
@@ -153,11 +161,13 @@ def plot_coordinates(S1, S2, save='fig'):
     plt.axis('off')
     #plot matrices POULETT
     ax = fig.add_subplot(223)
-    ax.imshow(np.log10(S2.probs+1e-5))
+    im = ax.imshow(np.log10(S2.probs+1e-5))
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     ax.set_xticks([])
     ax.set_yticks([])
     ax = fig.add_subplot(224)
-    ax.imshow(np.log10(S1.probs+1e-5))
+    im = ax.imshow(np.log10(S1.probs+1e-5))
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     ax.set_xticks([])
     ax.set_yticks([])
     plt.tight_layout()

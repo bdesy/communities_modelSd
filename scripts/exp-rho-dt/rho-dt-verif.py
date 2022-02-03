@@ -62,13 +62,13 @@ Dtheta = SD.angular_distance_matrix
 
 dist = []
 
-for i in tqdm(range(1000)):
+for i in tqdm(range(10000)):
 	A = SD.sample_random_matrix()
 	m = np.sum(np.triu(A))
 	connected_angular_distances = np.triu(A*Dtheta)
 	for ind in np.argwhere(connected_angular_distances>0.):
 		dist.append(connected_angular_distances[ind[0], ind[1]])
-
+print(dist)
 plt.hist(dist, bins=200, density=True, alpha=0.5, color='darkcyan')
 
 #from scipy.special import gamma

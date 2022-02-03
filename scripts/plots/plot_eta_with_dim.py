@@ -22,9 +22,10 @@ from matplotlib import rc
 rc('font',**{'serif':['Computer Modern Roman'], 'size':11})
 rc('text', usetex=True)
 
-dimensions = np.arange(1,100)
+dimensions = np.arange(1,301)
 N = 1000
 colors = ['coral', 'darkcyan', 'olivedrab']
+r = 10
 
 def eta(kkp, mu, N, d):
 	out = mu*kkp*2*np.pi**((d+1)/2)
@@ -47,14 +48,15 @@ for kkp in [1, np.sqrt(N), N]:
 			fmt=':'
 		etas = []
 		for d in dimensions:
-			etas.append(eta(kkp, get_mu(mu, D=d, beta=d*2.), N, d))
+			etas.append(eta(kkp, get_mu(mu, D=d, beta=d*r), N, d))
 		plt.plot(dimensions, etas, fmt, c=c, label=r'$\kappa\kappa^\prime={},\, \mu$ '.format(int(kkp))+mu)
 	i+=1
 plt.ylabel(r'$\eta$')
 plt.xlabel(r'$d$')
-plt.yticks([0, np.pi/16, np.pi/8, 3*np.pi/16, np.pi/4],['0', r'$\pi/16$', r'$\pi/8$', r'$3\pi/16$', r'$\pi/4$'])
+plt.yticks([0, np.pi/16, np.pi/8, 3*np.pi/16, np.pi/4, 1.],['0', r'$\pi/16$', r'$\pi/8$', r'$3\pi/16$', r'$\pi/4$', '1'])
 plt.legend()
 plt.grid()
-plt.xlim(1, 49)
-plt.yl im(0,1)
+plt.xlim(0, 300)
+plt.ylim(0,1)
+plt.title(r'Cas $\beta/d={}$, constant'.format(r))
 plt.show()
