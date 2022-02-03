@@ -77,6 +77,11 @@ def rms_distance_to_equator(coordinates):
     phi = coordinates.T[1]
     return np.sqrt(np.mean(phi**2))
 
+def project_coordinates_on_circle_with_R(coordinates, R, N):
+    xyz = transform_angular_to_euclidean(coordinates)
+    new_coordinates = rotate_euclidean_coordinates(xyz, N, R)
+    return transform_euclidean_to_angular(new_coordinates)
+
 def project_coordinates_on_circle(coordinates, N, rng, verbose=False):
     rmsd = rms_distance_to_equator(coordinates)
     out = np.copy(coordinates)

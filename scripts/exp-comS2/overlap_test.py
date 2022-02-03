@@ -21,6 +21,8 @@ from geometric_functions import *
 import argparse
 from time import time
 from comS2_util import *
+from scipy.integrate import quad
+from scipy.stats import norm
 
 
 def get_community_block_matrix(SD, sizes):
@@ -34,10 +36,6 @@ def get_community_block_matrix(SD, sizes):
         i_i += sizes[i]
         j_i = 0
     return block_mat
-
-def compute_overlapping_nodes(centers, sigma, sizes):
-    pass
-
 
 #parse input arguments
 parser = argparse.ArgumentParser()
@@ -62,21 +60,45 @@ beta_r = args.beta_ratio
 rng = np.random.default_rng()
 
 #sample angular coordinates on sphere and circle
-coordinatesS2, centers = get_communities_coordinates(nb_com, N, 
+coordinatesS2, centersS2 = get_communities_coordinates(nb_com, N, 
                                                     get_sigma_d(sigma, 2), 
                                                     place=args.placement, 
                                                     output_centers=True)
 if args.placement=='uniformly':
-    coordinatesS1 = (get_communities_coordinates(nb_com, N, sigma, place='equator').T[0]).reshape((N, 1))
+    coordinatesS1, centers = get_communities_coordinates(nb_com, N, sigma, 
+                                                        place='equator',
+                                                        output_centers=True)
+    coordinatesS1 = (coordinatesS1.T[0]).reshape((N, 1))
+    centersS1 = (centers.T[0]).reshape((nb_com, 1))
 else:
     coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
+    centersS1 = (project_coordinates_on_circle_with_R(centersS2, R, nb_com).T[0]).reshape((nb_com, 1))
 
 coordinates = [coordinatesS1, coordinatesS2]
 sizes = get_equal_communities_sizes(nb_com, N)
 
 #compute overlap counting matrix
-def integrate_overlap_probability_S2(mu1, mu2, sigma, show=False):
-    r = 2*sigma
+def normal_distribution_function(x, mu, sigma):
+    value = norm.pdf(x, mu, sigma)
+    return value
+
+## DO TEST HERE
+def integrate_overlap_probability_S1(mu1, mu2, sigma, show=False, factor=2.):
+    dt = compute_angular_distance(mu1, mu2, dimension=1, euclidean=False)
+    r = factor*sigma
+    means = np.array([mu1, mu2])
+    if dt > 2*r:
+        p = 0.
+    else:
+        b_i = np.max(means)-r
+        b_f = np.min(means)+r
+        args = (mu1, sigma)
+        p, err = quad(normal_distribution_function, b_i, b_f, args)
+    return p
+
+## DO TEST HERE
+def integrate_overlap_probability_S2(mu1, mu2, sigma, show=False, factor=2.):
+    r = factor*sigma
     thetas = np.array([mu1[0], mu2[0]])
     phis = np.array([mu1[1], mu2[1]])
     x = np.linspace(np.min(thetas)-r, np.max(thetas)+r, 1000)
@@ -96,19 +118,20 @@ def integrate_overlap_probability_S2(mu1, mu2, sigma, show=False):
         plt.show()
     return np.sum(pdf*mask*area)
 
-def get_overlap_matrix_S2(centers, sigma, sizes):
+def get_overlap_matrix(centers, sigma, sizes, d, factor):
     nc = len(sizes)
     overlap_mat = np.zeros((nc, nc))
+    #thetas = centers.T[0]%(2*np.pi)
+    #phis = centers.T[1]%np.pi
+    mus = centers#np.column_stack((thetas, phis))
     for i in range(nc):
         for j in range(i+1, nc):
-            p = integrate_overlap_probability_S2(centers[i], centers[j], sigma)
+            if d==2:
+                p = integrate_overlap_probability_S2(mus[i], mus[j], sigma, factor)
+            elif d==1:
+                p = integrate_overlap_probability_S1(mus[i], mus[j], sigma, factor)
             overlap_mat[i,j] = p*(sizes[i]+sizes[j])
     return overlap_mat+overlap_mat.T
-
-def get_overlap_matrix_S1(centers, sigma, sizes):
-    nc = len(sizes)
-    overlap_mat = np.zeros((nc, nc))
-    return overlap_mat
 
 #graph stuff
 mu = 0.01
@@ -222,8 +245,8 @@ assert (np.sum(m2)-np.sum(S2.probs)<1e-3)
 
 plot_matrices(S1, S2, m1*(1-np.eye(nb_com)), m2*(1-np.eye(nb_com)))
 
-m1 = get_overlap_matrix_S1(centers, sigma, sizes)
-m2 = get_overlap_matrix_S2(centers, sigma, sizes)
+m1 = get_overlap_matrix(centersS1, sigma, sizes, d=1, factor=4)
+m2 = get_overlap_matrix(centersS2, sigma, sizes, d=2, factor=4)
 plot_matrices(S1, S2, m1, m2)
 
 
