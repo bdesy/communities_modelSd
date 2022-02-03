@@ -54,12 +54,15 @@ def get_equal_communities_sizes(nb_com, N):
     sizes[0] += (N - int(np.sum(np.array(sizes))))
     return sizes
 
-def get_communities_coordinates(nb_com, N, sigma, place):
+def get_communities_coordinates(nb_com, N, sigma, place, output_centers=False):
     sizes = get_equal_communities_sizes(nb_com, N)
     centers = place_modes_coordinates_on_sphere(nb_com, place=place)
     sigmas = np.ones(nb_com)*sigma
     thetas, phis = sample_gaussian_clusters_on_sphere(centers, sigmas, sizes)
-    return np.column_stack((thetas, phis))
+    if output_centers:
+        return np.column_stack((thetas, phis)), centers
+    else:
+        return np.column_stack((thetas, phis))
 
 def randomly_rotate_coordinates(coordinates, N, rng, reach=np.pi):
     sign = (rng.integers(2)-0.5)*2.
