@@ -144,6 +144,22 @@ def sample_uniformly_on_hypersphere(N, dimension):
             coordinates[i] = pos / np.linalg.norm(pos)
     return coordinates
 
+def sample_from_fibonacci_sphere(n):
+    indices = np.arange(0, n, dtype=float) + 0.5
+    phi = np.arccos(1 - 2*indices/n)
+    theta = np.pi * (1 + 5**0.5) * indices
+    return np.column_stack((theta, phi))
+
+def place_modes_coordinates_on_sphere(nb_com, place='uniformly'):
+    if place=='uniformly':
+        coordinates = sample_from_fibonacci_sphere(nb_com)
+    elif place=='randomly':
+        coordinates = sample_uniformly_on_hypersphere(nb_com, dimension=2)
+    elif place=='equator':
+        theta = np.linspace(0, 2*np.pi, nb_com, endpoint=False)
+        phi = np.ones(theta.shape)*np.pi/2
+        coordinates = np.column_stack((theta, phi))
+    return coordinates
 
 # Tests
 
