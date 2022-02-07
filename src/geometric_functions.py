@@ -36,8 +36,8 @@ def compute_angular_distance(coord_i, coord_j, dimension, euclidean):
         denum = np.linalg.norm(coord_i)*np.linalg.norm(coord_j)
         out = np.arccos(np.dot(coord_i, coord_j)/denum)
     
-    assert out > 0., 'result negative'
-    assert out < np.pi, 'result greater than pi'
+    assert out >= 0., 'result negative'
+    assert out <= np.pi, 'result greater than pi'
     return out
 
 #geometric transformation on unit sphere
