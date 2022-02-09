@@ -109,8 +109,8 @@ def sample_gaussian_points_on_sphere(x_o, y_o, z_o, sigma):
     point = np.array([x,y,z])
     point /= np.linalg.norm(point)
     num = np.sqrt(point[0]**2 + point[1]**2)
-    theta = np.arctan2(point[1], point[0])
-    phi = np.arctan2(num, point[-1])
+    theta = np.arctan2(point[1], point[0])%(2*np.pi)
+    phi = np.arctan2(num, point[-1])%np.pi
     return theta, phi
 
 def sample_gaussian_clusters_on_sphere(centers, sigmas, sizes):
@@ -146,8 +146,8 @@ def sample_uniformly_on_hypersphere(N, dimension):
 
 def sample_from_fibonacci_sphere(n):
     indices = np.arange(0, n, dtype=float) + 0.5
-    phi = np.arccos(1 - 2*indices/n)
-    theta = np.pi * (1 + 5**0.5) * indices
+    phi = np.arccos(1 - 2*indices/n)%np.pi
+    theta = (np.pi * (1 + 5**0.5) * indices)%(2*np.pi)
     return np.column_stack((theta, phi))
 
 def place_modes_coordinates_on_sphere(nb_com, place='uniformly'):

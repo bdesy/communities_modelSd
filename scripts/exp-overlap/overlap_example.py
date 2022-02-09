@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Description : Community structure overlap experiment in the S1 and S1 model
+Description : Community structure overlap experiment example in the S1 and S1 model
 
 Author: Béatrice Désy
 
@@ -21,28 +21,7 @@ from geometric_functions import *
 import argparse
 from time import time
 from overlap_util import *
-from scipy.integrate import quad
-from scipy.stats import norm
 
-def set_correct_interval(mu1, mu2, d):
-    mu1[0] = mu1[0]%(2*np.pi)
-    mu2[0] = mu2[0]%(2*np.pi)
-    if d==2:
-        mu1[1] = mu1[1]%(np.pi)
-        mu2[1] = mu2[1]%(np.pi)
-    return mu1, mu2
-
-def get_community_block_matrix(SD, sizes):
-    nc = len(sizes)
-    block_mat = np.zeros((nc, nc))
-    i_i, j_i = 0, 0
-    for i in range(nc):
-        for j in range(nc):
-            block_mat[i,j] = np.sum(SD.probs[i_i:i_i+sizes[i], j_i:j_i+sizes[j]])
-            j_i += sizes[j]  
-        i_i += sizes[i]
-        j_i = 0
-    return block_mat
 
 #parse input arguments
 parser = argparse.ArgumentParser()
@@ -51,7 +30,7 @@ parser.add_argument('-nc', '--nb_communities', type=int, default=8,
 parser.add_argument('-dd', '--degree_distribution', type=str, default='pwl',
                         choices=['poisson', 'exp', 'pwl'],
                         help='shape of the degree distribution')
-parser.add_argument('-s', '--sigma', type=float, default=0.25,
+parser.add_argument('-s', '--sigma', type=float,
                         help='dispersion of points of angular clusters in d=1')
 parser.add_argument('-br', '--beta_ratio', type=float, default=3.5,
                         help='value of beta for d=1')
@@ -61,20 +40,31 @@ parser.add_argument('-p', '--placement', type=str, default='uniformly',
 parser.add_argument('-ok', '--optimize_kappas', type=bool, default=False)
 args = parser.parse_args() 
 
+def get_other_sigma(nc, d):
+    if d==2:
+        sigma=1./((3*nc)**(0.5))
+    elif d==1:
+        sigma = np.pi/(3*nc)
+    return sigma
+
 #setup
 N = 1000
 nb_com = args.nb_communities
-sigma = args.sigma
+if args.sigma is None:
+    sigma1 = get_other_sigma(nb_com, 1)
+else:
+    sigma1 = args.sigma
+sigma2 = get_sigma_d(sigma1, 2)
 beta_r = args.beta_ratio
 rng = np.random.default_rng()
 
 #sample angular coordinates on sphere and circle
 coordinatesS2, centersS2 = get_communities_coordinates(nb_com, N, 
-                                                    get_sigma_d(sigma, 2), 
+                                                    sigma2, 
                                                     place=args.placement, 
                                                     output_centers=True)
 if args.placement=='uniformly':
-    coordinatesS1, centers = get_communities_coordinates(nb_com, N, sigma, 
+    coordinatesS1, centers = get_communities_coordinates(nb_com, N, sigma1, 
                                                         place='equator',
                                                         output_centers=True)
     coordinatesS1 = (coordinatesS1.T[0]).reshape((N, 1))
@@ -82,72 +72,12 @@ if args.placement=='uniformly':
 
 else:
     coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
+    sigma1 = sigma2
     centersS1 = (project_coordinates_on_circle_with_R(centersS2, R, nb_com).T[0]).reshape((nb_com, 1))
 
 coordinates = [coordinatesS1, coordinatesS2]
 sizes = get_equal_communities_sizes(nb_com, N)
 
-#compute overlap counting matrix
-def normal_distribution_function(x, mu, sigma):
-    value = norm.pdf(x, mu, sigma)
-    return value
-
-def integrate_overlap_probability_S1(mu1, mu2, sigma, factor=2., show=False):
-    dt = compute_angular_distance(mu1, mu2, dimension=1, euclidean=False)
-    r = factor*sigma
-    if dt > 2*r:
-        p = 0.
-    else:
-        b_i = dt-r
-        b_f = r
-        args = (0, sigma)
-        p, err = quad(normal_distribution_function, b_i, b_f, args)
-    return p
-
-mu_test = np.array([[0.5], [1.5], [0], [2*np.pi]])
-
-assert (integrate_overlap_probability_S1(mu_test[0], mu_test[0], 0.2, factor=10) - 1.)<1e-5
-assert (integrate_overlap_probability_S1(mu_test[2], mu_test[3], 0.2, factor=10) - 1.)<1e-5
-assert integrate_overlap_probability_S1(mu_test[0], mu_test[1], 0.2)<1e-5
-
-def integrate_overlap_probability_S2(mu1, mu2, sigma, factor=2., show=False):
-    dt = compute_angular_distance(mu1, mu2, dimension=2, euclidean=False)
-    r = factor*sigma
-    if dt>2*r:
-        p=0
-        show=False
-    else:
-        x = np.linspace(-2*r, 2*r, 1000)
-        y = np.linspace(-2*r, 2*r, 1000)
-        xx, yy = np.meshgrid(x,y)
-        disk1 = np.where(xx**2 + yy**2 < r, 1, 0)
-        disk2 = np.where((xx-dt)**2 + yy**2 < r, 1, 0)
-        mask = disk1*disk2
-        argument_exp = (xx**2+yy**2)/sigma
-        pdf = np.exp( - argument_exp/2 )/(2*np.pi*sigma)
-        #probability
-        area = np.diff(y)[0]*np.diff(x)[0]
-        p = np.sum(pdf*mask*area)
-        assert p>0., 'probability should not be zero, mu1={}, mu2={}'.format(mu1, mu2)
-    if show==True:
-        plt.imshow(pdf*mask)
-        plt.title(r'$p={}$'.format(p))
-        plt.colorbar()
-        plt.show()
-    return p
-
-def get_overlap_matrix(centers, sigma, sizes, d, factor, show=False):
-    nc = len(sizes)
-    overlap_mat = np.zeros((nc, nc))
-    mus = centers
-    for i in range(nc):
-        for j in range(i+1, nc):
-            if d==2:
-                p = integrate_overlap_probability_S2(mus[i], mus[j], sigma, factor, show=show)
-            elif d==1:
-                p = integrate_overlap_probability_S1(mus[i], mus[j], sigma, factor, show=show)
-            overlap_mat[i,j] = p*(sizes[i]+sizes[j])
-    return overlap_mat+overlap_mat.T
 
 #graph stuff
 mu = 0.01
@@ -205,9 +135,9 @@ def plot_matrices(S1, S2, m1, m2, title_mat):
     ax.plot_surface(
         x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
     for c in range(nb_com):
-        color = plt.cm.tab10(c)
+        color = plt.cm.tab10(c%10)
         nodes = np.where(S2.communities==c)
-        ax.scatter(xx[nodes],yy[nodes],zz[nodes],color=color,s=10)
+        ax.scatter(xx[nodes],yy[nodes],zz[nodes],color=color,s=5)
     ax.set_xlim([-1.,1.])
     ax.set_ylim([-1.,1.])
     ax.set_zlim([-1.,1.])
@@ -218,9 +148,9 @@ def plot_matrices(S1, S2, m1, m2, title_mat):
     ax = fig.add_subplot(322, projection='polar')
     theta = np.mod(S1.coordinates.flatten(), 2*np.pi)
     for c in range(nb_com):
-        color = plt.cm.tab10(c)
+        color = plt.cm.tab10(c%10)
         nodes = np.where(S2.communities==c)
-        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=10)
+        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=5)
 
     plt.ylim(0,1.5)
     ax.set_xticks([])
@@ -257,16 +187,77 @@ def plot_matrices(S1, S2, m1, m2, title_mat):
     plt.tight_layout()
     plt.show()
 
+def get_null_matrix(SD, sizes):
+    nc = len(sizes)
+    degrees = np.sum(SD.probs, axis=1)
+    comm_degrees = np.zeros(nc)
+    i_i=0
+    for i in range(nc):
+        comm_degrees[i] = np.sum(degrees[i_i:i_i+sizes[i]])
+        i_i += sizes[i]
+    null_matrix = np.zeros((nc, nc))
+    dm = np.sum(SD.probs)
+    for i in range(nc):
+        for j in range(nc):
+            null_matrix[i,j] = comm_degrees[i]*comm_degrees[j]
+    return null_matrix / dm
 
 m1 = get_community_block_matrix(S1, sizes)
 m2 = get_community_block_matrix(S2, sizes)
 assert (np.sum(m1)-np.sum(S1.probs)<1e-3)
 assert (np.sum(m2)-np.sum(S2.probs)<1e-3)
+m1 *= 1-np.eye(nb_com)
+m2 *= 1-np.eye(nb_com)
+plot_matrices(S1, S2, m1, m2, 'inter-comms edges')
 
-plot_matrices(S1, S2, m1*(1-np.eye(nb_com)), m2*(1-np.eye(nb_com)), 'inter-communities edges')
+o1 = get_overlap_matrix(centersS1, sigma1, sizes, d=1, factor=2.1)
+o2 = get_overlap_matrix(centersS2, sigma2, sizes, d=2, factor=2.1)
+plot_matrices(S1, S2, o1, o2, 'overlap nodes')
 
-m1 = get_overlap_matrix(centersS1, sigma, sizes, d=1, factor=2)
-m2 = get_overlap_matrix(centersS2, sigma, sizes, d=2, factor=2)
-plot_matrices(S1, S2, m1, m2, 'overlap nodes')
+inter_edges = []
+overlap_nodes = []
+for i in range(nb_com):
+    for j in range(i+1, nb_com):
+        inter_edges.append([m1[i,j], m2[i,j]])
+        overlap_nodes.append([o1[i,j], o2[i,j]])
+inter_edges = np.array(inter_edges).T
+overlap_nodes = np.array(overlap_nodes).T
 
+plt.plot(inter_edges[0], overlap_nodes[0], 'o', label='S1', ms=5)
+plt.plot(inter_edges[1], overlap_nodes[1], '^', label='S2', ms=3)
+plt.xlabel('inter-communities edges count')
+plt.ylabel('overlap nodes count')
+plt.legend()
+plt.show()
+
+km1, km2 = get_null_matrix(S1, sizes), get_null_matrix(S2, sizes)
+mm1 = np.where(m1>km1, 1, 0)
+mm2 = np.where(m2>km2, 1, 0)
+plot_matrices(S1, S2, km1, km2, 'kk/2m')
+plot_matrices(S1, S2, mm1, mm2, 'community edge')
+
+o1 = np.where(o1>0, 1, 0)
+o2 = np.where(o2>0, 1, 0)
+
+plot_matrices(S1, S2, (1-o1)*mm1, (1-o2)*mm2, 'community edge without overlap')
+
+'''
+
+inter_edges = []
+overlap_nodes = []
+for i in range(nb_com):
+    for j in range(i+1, nb_com):
+        inter_edges.append([m1[i,j], m2[i,j]])
+        overlap_nodes.append([o1[i,j], o2[i,j]])
+inter_edges = np.array(inter_edges).T
+overlap_nodes = np.array(overlap_nodes).T
+
+plt.scatter(inter_edges[0], overlap_nodes[0], label='S1')
+plt.scatter(inter_edges[1], overlap_nodes[1], label='S2')
+plt.xlabel('inter-communities edges count')
+plt.ylabel('overlap nodes count')
+plt.legend()
+plt.show()
+
+'''
 

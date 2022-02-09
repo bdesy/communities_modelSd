@@ -17,8 +17,85 @@ from hyperbolic_random_graph import *
 
 from hrg_functions import *
 from geometric_functions import *
+from scipy.integrate import quad
+from scipy.stats import norm
 
 from time import time
+
+def get_community_block_matrix(SD, sizes):
+    nc = len(sizes)
+    block_mat = np.zeros((nc, nc))
+    i_i, j_i = 0, 0
+    for i in range(nc):
+        for j in range(nc):
+            block_mat[i,j] = np.sum(SD.probs[i_i:i_i+sizes[i], j_i:j_i+sizes[j]])
+            j_i += sizes[j]  
+        i_i += sizes[i]
+        j_i = 0
+    return block_mat
+
+def normal_distribution_function(x, mu, sigma):
+    arg = (x-mu)/sigma
+    value = np.exp(-0.5*arg**2)/(sigma*np.sqrt(2*np.pi))
+    return value
+
+def integrate_overlap_probability_S1(mu1, mu2, sigma, factor=2., show=False):
+    dt = compute_angular_distance(mu1, mu2, dimension=1, euclidean=False)
+    r = factor*sigma
+    if dt > 2*r:
+        p = 0.
+    else:
+        b_i = dt-r
+        b_f = r
+        args = (0, sigma)
+        p, err = quad(normal_distribution_function, b_i, b_f, args)
+    return p
+
+mu_test = np.array([[0.5], [1.5], [0], [2*np.pi]])
+
+assert (integrate_overlap_probability_S1(mu_test[0], mu_test[0], 0.2, factor=10) - 1.)<1e-5
+assert (integrate_overlap_probability_S1(mu_test[2], mu_test[3], 0.2, factor=10) - 1.)<1e-5
+assert integrate_overlap_probability_S1(mu_test[0], mu_test[1], 0.2)<1e-5
+
+def integrate_overlap_probability_S2(mu1, mu2, sigma, factor=2., show=False):
+    dt = compute_angular_distance(mu1, mu2, dimension=2, euclidean=False)
+    r = factor*sigma
+    if dt>2*r:
+        p=0
+        show=False
+    else:
+        x = np.linspace(-2*r, 2*r, 1000)
+        y = np.linspace(-2*r, 2*r, 1000)
+        xx, yy = np.meshgrid(x,y)
+        disk1 = np.where(xx**2 + yy**2 < r, 1, 0)
+        disk2 = np.where((xx-dt)**2 + yy**2 < r, 1, 0)
+        mask = disk1*disk2
+        argument_exp = (xx**2+yy**2)/sigma
+        pdf = np.exp( - argument_exp/2 )/(2*np.pi*sigma)
+        #probability
+        area = np.diff(y)[0]*np.diff(x)[0]
+        p = np.sum(pdf*mask*area)
+        assert p>0., 'probability should not be zero, mu1={}, mu2={}'.format(mu1, mu2)
+    if show==True:
+        plt.imshow(pdf*mask)
+        plt.title(r'$p={}$'.format(p))
+        plt.colorbar()
+        plt.show()
+    return p
+
+def get_overlap_matrix(centers, sigma, sizes, d, factor, show=False):
+    nc = len(sizes)
+    overlap_mat = np.zeros((nc, nc))
+    mus = centers
+    for i in range(nc):
+        for j in range(i+1, nc):
+            if d==2:
+                p = integrate_overlap_probability_S2(mus[i], mus[j], sigma, factor, show=show)
+            elif d==1:
+                p = integrate_overlap_probability_S1(mus[i], mus[j], sigma, factor, show=show)
+            overlap_mat[i,j] = p*(sizes[i]+sizes[j])
+    return overlap_mat+overlap_mat.T
+
 
 def get_order_theta_within_communities(SD, sizes):
     theta = SD.coordinates.T[0]
