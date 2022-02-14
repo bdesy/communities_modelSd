@@ -22,6 +22,24 @@ import argparse
 from time import time
 from overlap_util import *
 
+def get_stable_rank(B):
+    u, s, vh = np.linalg.svd(B)
+    return np.sum(s**2)/(s[0])**2
+
+def get_strengths(mat):
+    strengths = np.sum(mat, axis=0)
+    return np.sort(strengths)[::-1]
+
+def get_weights(mat):
+    triu = np.where(np.triu(mat)>0)
+    out = mat[triu]
+    return np.sort(out.flatten())[::-1]
+
+def get_disparities(weights):
+    strengths = np.sum(weights, axis=0)
+    num = weights**2
+    Y = np.sum(num, axis=0)
+    return np.sort(Y/strengths)[::-1]
 
 #parse input arguments
 parser = argparse.ArgumentParser()
@@ -40,21 +58,19 @@ parser.add_argument('-p', '--placement', type=str, default='uniformly',
 parser.add_argument('-ok', '--optimize_kappas', type=bool, default=False)
 args = parser.parse_args() 
 
-def get_other_sigma(nc, d):
-    if d==2:
-        sigma=1./((3*nc)**(0.5))
-    elif d==1:
-        sigma = np.pi/(3*nc)
+def get_other_sigma1(nc):
+    sigma = np.pi/(2*nc)
     return sigma
 
 #setup
 N = 1000
 nb_com = args.nb_communities
 if args.sigma is None:
-    sigma1 = get_other_sigma(nb_com, 1)
+    sigma1 = get_other_sigma1(nb_com)
 else:
     sigma1 = args.sigma
 sigma2 = get_sigma_d(sigma1, 2)
+print(sigma2, 2*sigma1)
 beta_r = args.beta_ratio
 rng = np.random.default_rng()
 
@@ -118,7 +134,7 @@ for D in [1,2]:
     SD.build_probability_matrix(order=order) 
     SD.communities = get_communities_array(N, sizes)
 
-def plot_matrices(S1, S2, m1, m2, title_mat):
+def plot_matrices(S1, S2, m1, m2):
     #the sphere
     phi, theta = np.mgrid[0.0:np.pi:100j, 0.0:2.0*np.pi:100j]
     x = np.sin(phi)*np.cos(theta)
@@ -130,7 +146,7 @@ def plot_matrices(S1, S2, m1, m2, title_mat):
     yy = np.sin(phi)*np.sin(theta)
     zz = np.cos(phi)
     #plot sphere
-    fig = plt.figure()
+    fig =plt.figure(figsize=(6,7))
     ax = fig.add_subplot(321, projection='3d')
     ax.plot_surface(
         x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
@@ -141,8 +157,9 @@ def plot_matrices(S1, S2, m1, m2, title_mat):
     ax.set_xlim([-1.,1.])
     ax.set_ylim([-1.,1.])
     ax.set_zlim([-1.,1.])
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_zticks([])
 
     #plot circle
     ax = fig.add_subplot(322, projection='polar')
@@ -150,7 +167,7 @@ def plot_matrices(S1, S2, m1, m2, title_mat):
     for c in range(nb_com):
         color = plt.cm.tab10(c%10)
         nodes = np.where(S2.communities==c)
-        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=5)
+        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=2, alpha=0.3)
 
     plt.ylim(0,1.5)
     ax.set_xticks([])
@@ -158,49 +175,64 @@ def plot_matrices(S1, S2, m1, m2, title_mat):
     plt.axis('off')
 
     ax = fig.add_subplot(323)
-    im = ax.imshow(np.log10(S2.probs+1e-5))
+    im = ax.imshow(np.log10(S2.probs+1e-5), cmap='Greys')
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title('probs S2')
+    r = get_stable_rank(S2.probs)
+    ax.set_title('connectivity S2, r={:.2f}'.format(r))
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
     ax = fig.add_subplot(324)
-    im = ax.imshow(np.log10(S1.probs+1e-5))
+    im = ax.imshow(np.log10(S1.probs+1e-5), cmap='Greys')
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title('probs S1')
+    r = get_stable_rank(S1.probs)
+    ax.set_title('connectivity S1, r={:.2f}'.format(r))
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
+    mi = np.min(m1)
+    ma = np.max(np.array([np.max(m1), np.max(m2)]))
     ax = fig.add_subplot(325)
-    im = ax.imshow(m2)
+    im = ax.imshow(m2, cmap='Greys', vmin=mi, vmax=ma)
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title(title_mat+' S2')
+    r = get_stable_rank(m2)
+    ax.set_title('block matrix S2, r={:.2f}'.format(r))
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
     ax = fig.add_subplot(326)
-    im = ax.imshow(m1)
+    im = ax.imshow(m1, cmap='Greys', vmin=mi, vmax=ma)
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.set_title(title_mat+' S1')
+    r = get_stable_rank(m1)
+    ax.set_title('block matrix S1, r={:.2f}'.format(r))
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+
     plt.tight_layout()
     plt.show()
 
-def get_null_matrix(SD, sizes):
-    nc = len(sizes)
-    degrees = np.sum(SD.probs, axis=1)
-    comm_degrees = np.zeros(nc)
-    i_i=0
-    for i in range(nc):
-        comm_degrees[i] = np.sum(degrees[i_i:i_i+sizes[i]])
-        i_i += sizes[i]
-    null_matrix = np.zeros((nc, nc))
-    dm = np.sum(SD.probs)
-    for i in range(nc):
-        for j in range(nc):
-            null_matrix[i,j] = comm_degrees[i]*comm_degrees[j]
-    return null_matrix / dm
+def plot_quantities(B1, B2):
+    fig, ax = plt.subplots(nrows=3, ncols=2, sharey='row', figsize=(6,6))
+    models = [B2, B1]
+    dims = [2,1]
+    for i in [0,1]:
+        D=dims[i]
+        weights = get_weights(models[i])
+        strengths = get_strengths(models[i])
+        disparities = get_disparities(models[i])
+        r = get_stable_rank(models[i])
+        ax[0, i].plot(weights, 'o', ms=2, label=r'$r={:2f}$'.format(r))
+        ax[0, i].legend()
+        ax[1, i].plot(strengths, 'o', ms=2)
+        ax[2, i].plot(disparities, 'o', ms=2)
+
+        ax[0, i].set_title(r'block matrix $S^{}$'.format(D))
+    ax[0, 0].set_ylabel('weights')
+    ax[1, 0].set_ylabel('strengths')
+    ax[2, 0].set_ylabel('disparities')
+    plt.show()
+
+
 
 m1 = get_community_block_matrix(S1, sizes)
 m2 = get_community_block_matrix(S2, sizes)
@@ -208,56 +240,8 @@ assert (np.sum(m1)-np.sum(S1.probs)<1e-3)
 assert (np.sum(m2)-np.sum(S2.probs)<1e-3)
 m1 *= 1-np.eye(nb_com)
 m2 *= 1-np.eye(nb_com)
-plot_matrices(S1, S2, m1, m2, 'inter-comms edges')
 
-o1 = get_overlap_matrix(centersS1, sigma1, sizes, d=1, factor=2.1)
-o2 = get_overlap_matrix(centersS2, sigma2, sizes, d=2, factor=2.1)
-plot_matrices(S1, S2, o1, o2, 'overlap nodes')
+plot_matrices(S1, S2, m1, m2)
 
-inter_edges = []
-overlap_nodes = []
-for i in range(nb_com):
-    for j in range(i+1, nb_com):
-        inter_edges.append([m1[i,j], m2[i,j]])
-        overlap_nodes.append([o1[i,j], o2[i,j]])
-inter_edges = np.array(inter_edges).T
-overlap_nodes = np.array(overlap_nodes).T
-
-plt.plot(inter_edges[0], overlap_nodes[0], 'o', label='S1', ms=5)
-plt.plot(inter_edges[1], overlap_nodes[1], '^', label='S2', ms=3)
-plt.xlabel('inter-communities edges count')
-plt.ylabel('overlap nodes count')
-plt.legend()
-plt.show()
-
-km1, km2 = get_null_matrix(S1, sizes), get_null_matrix(S2, sizes)
-mm1 = np.where(m1>km1, 1, 0)
-mm2 = np.where(m2>km2, 1, 0)
-plot_matrices(S1, S2, km1, km2, 'kk/2m')
-plot_matrices(S1, S2, mm1, mm2, 'community edge')
-
-o1 = np.where(o1>0, 1, 0)
-o2 = np.where(o2>0, 1, 0)
-
-plot_matrices(S1, S2, (1-o1)*mm1, (1-o2)*mm2, 'community edge without overlap')
-
-'''
-
-inter_edges = []
-overlap_nodes = []
-for i in range(nb_com):
-    for j in range(i+1, nb_com):
-        inter_edges.append([m1[i,j], m2[i,j]])
-        overlap_nodes.append([o1[i,j], o2[i,j]])
-inter_edges = np.array(inter_edges).T
-overlap_nodes = np.array(overlap_nodes).T
-
-plt.scatter(inter_edges[0], overlap_nodes[0], label='S1')
-plt.scatter(inter_edges[1], overlap_nodes[1], label='S2')
-plt.xlabel('inter-communities edges count')
-plt.ylabel('overlap nodes count')
-plt.legend()
-plt.show()
-
-'''
+plot_quantities(m1, m2)
 

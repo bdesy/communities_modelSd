@@ -32,7 +32,9 @@ def get_community_block_matrix(SD, sizes):
             j_i += sizes[j]  
         i_i += sizes[i]
         j_i = 0
-    return block_mat
+    block_mat *= 1-np.eye(nc)
+    norm =  np.sum(block_mat)/2
+    return block_mat/norm
 
 def normal_distribution_function(x, mu, sigma):
     arg = (x-mu)/sigma
