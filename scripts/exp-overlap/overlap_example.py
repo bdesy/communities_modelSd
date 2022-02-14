@@ -236,12 +236,26 @@ def plot_quantities(B1, B2):
 
 m1 = get_community_block_matrix(S1, sizes)
 m2 = get_community_block_matrix(S2, sizes)
-assert (np.sum(m1)-np.sum(S1.probs)<1e-3)
-assert (np.sum(m2)-np.sum(S2.probs)<1e-3)
-m1 *= 1-np.eye(nb_com)
-m2 *= 1-np.eye(nb_com)
+
+m1 = normalize_block_matrix(m1, nb_com)
+m2 = normalize_block_matrix(m2, nb_com)
+
+def get_degree_comm_seq(SD, sizes):
+    nc = len(sizes)
+    m = get_community_block_matrix(SD, sizes)
+    norm = np.sum(m)/2
+    m = normalize_block_matrix(m, nc)
+    return np.sum(np.where(m > 1./norm, 1, 0), axis=0)
 
 plot_matrices(S1, S2, m1, m2)
+
+a1 = get_alpha_matrix(m1, get_degree_comm_seq(S1, sizes), nb_com)
+a2 = get_alpha_matrix(m2, get_degree_comm_seq(S2, sizes), nb_com)
+
+alpha = 0.2
+a1, a2 = np.where(a1<alpha, 1, 0), np.where(a2<alpha, 1, 0)
+
+plot_matrices(S1, S2, a1, a2)
 
 plot_quantities(m1, m2)
 

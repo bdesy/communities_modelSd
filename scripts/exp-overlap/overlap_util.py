@@ -22,6 +22,11 @@ from scipy.stats import norm
 
 from time import time
 
+def normalize_block_matrix(block_mat, nc):
+    block_mat *= 1-np.eye(nc)
+    norm =  np.sum(block_mat)/2
+    return block_mat/norm
+
 def get_community_block_matrix(SD, sizes):
     nc = len(sizes)
     block_mat = np.zeros((nc, nc))
@@ -32,9 +37,8 @@ def get_community_block_matrix(SD, sizes):
             j_i += sizes[j]  
         i_i += sizes[i]
         j_i = 0
-    block_mat *= 1-np.eye(nc)
-    norm =  np.sum(block_mat)/2
-    return block_mat/norm
+    assert (np.sum(block_mat)-np.sum(SD.probs)<1e-5), 'sum of probs not equal'
+    return block_mat
 
 def normal_distribution_function(x, mu, sigma):
     arg = (x-mu)/sigma
@@ -170,3 +174,32 @@ def project_coordinates_on_circle(coordinates, N, rng, verbose=False):
         #plt.show()
         print('Final RMS distance to equator is {}'.format(rmsd))
     return new_coordinates.T[0].reshape((N,1)), R
+
+
+#extracting backbone stuff
+
+def get_degree_comm_seq(SD, sizes):
+    nc = len(sizes)
+    m = get_community_block_matrix(SD, sizes)
+    norm = np.sum(m)/2
+    m = normalize_block_matrix(m, nc)
+    return np.sum(np.where(m > 1/norm, 1, 0), axis=0)
+
+def integrand_alpha_ij(x, k):
+    return (1-x)**(k-2)
+
+def integrate_alpha_ij(k, p_ij):
+    integral, error = quad(integrand_alpha_ij, 0, p_ij, (k))
+    return 1 - (k-1)*integral
+
+def get_alpha_matrix(weights_mat, degrees, nc):
+    strengths = np.sum(weights_mat, axis=0)
+    alpha = np.zeros((nc, nc))
+    for i in range(nc):
+        for j in range(nc):
+            p_ij = weights_mat[i,j]/strengths[i]
+            k = degrees[i]
+            alpha[i,j] = integrate_alpha_ij(k, p_ij)
+    return alpha
+
+
