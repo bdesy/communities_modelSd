@@ -52,10 +52,12 @@ class ModelSD():
         self.gp.mu = self.mu
 
     def optimize_kappas(self, rng):
-        print('Optimizing latent degrees kappas')
+        if self.op.verbose==True:
+            print('Optimizing latent degrees kappas')
         kappas, success = optimize_kappas(rng, self.gp.get_njitable(), self.lp, self.op)
         self.kappas = kappas
-        print('Optimization has succeeded : {}'.format(success))
+        if self.op.verbose==True:
+            print('Optimization has succeeded : {}'.format(success))
 
     def compute_all_expected_degrees(self):
         self.expected_degrees = compute_all_expected_degrees(self.N, 

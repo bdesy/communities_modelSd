@@ -18,6 +18,7 @@ import argparse
 from comS2_util import *
 from numba import njit
 import os
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-nc', '--nb_communities', type=int,

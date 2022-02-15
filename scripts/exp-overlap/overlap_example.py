@@ -22,10 +22,6 @@ import argparse
 from time import time
 from overlap_util import *
 
-def get_stable_rank(B):
-    u, s, vh = np.linalg.svd(B)
-    return np.sum(s**2)/(s[0])**2
-
 def get_strengths(mat):
     strengths = np.sum(mat, axis=0)
     return np.sort(strengths)[::-1]
@@ -34,12 +30,6 @@ def get_weights(mat):
     triu = np.where(np.triu(mat)>0)
     out = mat[triu]
     return np.sort(out.flatten())[::-1]
-
-def get_disparities(weights):
-    strengths = np.sum(weights, axis=0)
-    num = weights**2
-    Y = np.sum(num, axis=0)
-    return np.sort(Y/strengths)[::-1]
 
 #parse input arguments
 parser = argparse.ArgumentParser()
@@ -70,7 +60,7 @@ if args.sigma is None:
 else:
     sigma1 = args.sigma
 sigma2 = get_sigma_d(sigma1, 2)
-print(sigma2, 2*sigma1)
+
 beta_r = args.beta_ratio
 rng = np.random.default_rng()
 
@@ -219,11 +209,12 @@ def plot_quantities(B1, B2):
         D=dims[i]
         weights = get_weights(models[i])
         strengths = get_strengths(models[i])
-        disparities = get_disparities(models[i])
+        disparities = np.sort(get_disparities(models[i]))[::-1]
         r = get_stable_rank(models[i])
         ax[0, i].plot(weights, 'o', ms=2, label=r'$r={:2f}$'.format(r))
         ax[0, i].legend()
         ax[1, i].plot(strengths, 'o', ms=2)
+        ax[2, i].axhline(np.mean(disparities), c='k', alpha=0.3)
         ax[2, i].plot(disparities, 'o', ms=2)
 
         ax[0, i].set_title(r'block matrix $S^{}$'.format(D))
