@@ -68,7 +68,7 @@ def main():
     sample_size = 10
     nc_list = [5, 15, 25]
     dd_list = ['exp', 'pwl']
-    beta_ratio_list = [3.5]
+    beta_ratio_list = [1.5, 10.]
     sigma_axis = np.linspace(0.01, 0.3, 10)
 
     tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(sigma_axis)
@@ -102,7 +102,7 @@ def main():
                             res[key+'-r'] = r_dist
                             res[key+'-Y'] = Y_dist
     
-    filepath = 'data/sample10'
+    filepath = 'data/sample10_betalim'
     with open(filepath+'.json', 'w') as write_file:
         json.dump(res, write_file, indent=4)
 
