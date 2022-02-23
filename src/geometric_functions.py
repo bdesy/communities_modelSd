@@ -40,6 +40,18 @@ def compute_angular_distance(coord_i, coord_j, dimension, euclidean):
     assert out <= np.pi, 'result greater than pi'
     return out
 
+@njit
+def build_angular_distance_matrix(N, coordinates, D, euclidean, order=None):
+    mat = np.zeros((N,N))
+    if order is None:
+        order = np.arange(N)
+    for i in range(N):
+        coord_i = coordinates[order[i]]
+        for j in range(i):
+            coord_j = coordinates[order[j]]
+            mat[i,j] = compute_angular_distance(coord_i, coord_j, D, euclidean)
+    return mat+mat.T
+
 #geometric transformation on unit sphere
 @njit
 def transform_angular_to_euclidean(coordinates):
