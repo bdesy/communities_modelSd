@@ -29,13 +29,6 @@ def get_local_params(N, D, nc, sigma, target_degrees):
                                 'nodes':np.arange(N)}
     return local_params
 
-def get_coordinates(N, D, nc, sigma):
-    if D==1:
-        coordinates = get_communities_coordinates(nc, N, sigma, place='equator')
-        coordinates = (coordinates.T[0]).reshape((N, 1))
-    elif D==2:
-        coordinates = get_communities_coordinates(nc, N, sigma, place='uniformly')
-    return coordinates
 
 def sample_model(global_params, local_params, opt_params, average_k, rng, sizes):
     SD = ModelSD()

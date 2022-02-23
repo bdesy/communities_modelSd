@@ -57,6 +57,14 @@ def integrate_overlap_probability_S1(mu1, mu2, sigma, factor=2., show=False):
         p, err = quad(normal_distribution_function, b_i, b_f, args)
     return p
 
+def get_coordinates(N, D, nc, sigma):
+    if D==1:
+        coordinates = get_communities_coordinates(nc, N, sigma, place='equator')
+        coordinates = (coordinates.T[0]).reshape((N, 1))
+    elif D==2:
+        coordinates = get_communities_coordinates(nc, N, sigma, place='uniformly')
+    return coordinates
+
 mu_test = np.array([[0.5], [1.5], [0], [2*np.pi]])
 
 assert (integrate_overlap_probability_S1(mu_test[0], mu_test[0], 0.2, factor=10) - 1.)<1e-5
