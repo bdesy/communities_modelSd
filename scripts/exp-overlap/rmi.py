@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Description : Functions for reduced mutual information calculations, 
-from https://doi.org/10.1103/PhysRevE.101.042304
+from https://doi.org/10.1103/PhysRevE.101.042304 
+using their notation for variables.
 
 Author: Béatrice Désy
 
@@ -11,9 +12,17 @@ Date : 23/02/2022
 
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.special import gamma
 from numba import njit
-from time import time
 
+log = np.log
+
+def reduced_mutual_information(N, labels_a, labels_b):
+    R, S = get_labels_indices(labels_a), get_labels_indices(labels_b)
+    a, b = get_labels_totals(labels_a, R), get_labels_totals(labels_b, R)
+    MI = compute_mutual_information(N, labels_a, labels_b, R, S)
+    logOmega = approximate_log_Omega(N, a, b, R, S)
+    return MI - logOmega / N
 
 def get_labels_indices(labels):
     assert issubclass(labels.dtype.type, np.integer), 'labels not integers'
@@ -49,13 +58,59 @@ def compute_mutual_information(N, labels_a, labels_b, R, S):
         for s in range(S):
             c_rs = c_matrix[r,s]
             if c_rs > 0.:
-                MI += c_rs * np.log(N * c_rs / (a[r]*b[s]))
+                MI += c_rs * log(N * c_rs / (a[r]*b[s]))
     return MI / N
 
 
+def approximate_log_Omega(N, a, b, R, S):
+    out = (R-1)*(S-1)*log(N + 0.5*R*S)
+    w = N / (N + 0.5*R*S)
+    x = change_of_variable(a, R, w, N)
+    y = change_of_variable(b, S, w, N)
+    mu = kindof_normalisation(R, y)
+    nu = kindof_normalisation(S, x)
+
+    out += term_with_sums(R, nu, y)
+    out += term_with_sums(S, mu, x)
+    out += term_with_gammas(R, S, mu, nu)
+    return out
+
+@njit
+def change_of_variable(a, R, w, N):
+    x = w*a / N
+    return x + (1-w)/R
+
+@njit
+def kindof_normalisation(R, y):
+    out = (R+1) / (R * np.sum(y**2))
+    return out - 1./R
+
+@njit
+def term_with_sums(R, nu, y):
+    out = np.sum(log(y))
+    return 0.5*(R + nu - 2)*out
+
+def term_with_gammas(R, S, mu, nu):
+    t = gamma(mu*R)/(gamma(nu)*gamma(R))**S
+    tt = gamma(nu*S)/(gamma(mu)*gamma(S))**R
+    return 0.5*log(t*tt)
 
 
 # -------------------------------Scrap
+
+from time import time
+
+def test_reduced_mutual_information():
+    labels_a = []
+    for i in range(12):
+        labels_a+=[i]*100
+    labels_a = np.array(labels_a)
+    N = len(labels_a)
+    for i in [0, 1, 11, 255]:
+        labels_b = np.roll(labels_a, i)
+        ti = time()
+        print(reduced_mutual_information(N, labels_a, labels_b), time()-ti)
+
 
 def test_mutual_information():
     labels_a = []
@@ -70,4 +125,16 @@ def test_mutual_information():
         ti = time()
         print(compute_mutual_information(N, labels_a, labels_b, R, S), time()-ti)
 
-
+def test_approximate_logOmega():
+    labels_a = []
+    for i in range(8):
+        labels_a+=[i]*100
+    labels_a = np.array(labels_a)
+    R = get_labels_indices(labels_a)
+    N = len(labels_a)
+    for i in [0, 1, 11, 25]:
+        labels_b = np.roll(labels_a, i)
+        S = get_labels_indices(labels_b)
+        a, b = get_labels_totals(labels_a, R), get_labels_totals(labels_b, S)
+        ti = time()
+        print(approximate_log_Omega(N, a, b, R, S), time()-ti)
