@@ -18,8 +18,15 @@ from hrg_functions import *
 from geometric_functions import *
 from overlap_util import *
 
-def get_dict_key(D, dd, nc, beta, sigma):
-    return 'S{}-'.format(D)+dd+'-{}coms-{}beta-{:.2f}sigma'.format(nc, beta, sigma)
+def get_sigma_max(nc, D):
+    if D==1:
+        sigma = np.sqrt(2*np.pi)/nc
+    elif D==2:
+        sigma = np.sqrt(2./nc)
+    return sigma
+
+def get_dict_key(D, dd, nc, beta, f):
+    return 'S{}-'.format(D)+dd+'-{}coms-{}beta-{:.2f}sigmam'.format(nc, beta, f)
 
 def get_local_params(N, D, nc, sigma, target_degrees): 
     coordinates = get_coordinates(N, D, nc, sigma)
@@ -61,10 +68,10 @@ def main():
     sample_size = 10
     nc_list = [5, 15, 25]
     dd_list = ['exp', 'pwl']
-    beta_ratio_list = [1.5, 10.]
-    sigma_axis = np.linspace(0.01, 0.3, 10)
+    beta_ratio_list = [1.5, 3.5, 10.]
+    frac_sigma_axis = np.linspace(0.1, 0.9, 10)
 
-    tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(sigma_axis)
+    tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(frac_sigma_axis)
 
     res = {}
     with tqdm(total=tot) as pbar:
@@ -74,12 +81,14 @@ def main():
                 for dd in dd_list:
                     target_degrees = get_target_degree_sequence(average_k, N, 
                                             rng, dd, sorted=False) 
-                    for sigma in sigma_axis:
+                    for f in frac_sigma_axis:
                         for D in [1,2]:
+                            sigma_max = get_sigma_max(nc, D)
+                            sigma = f*sigma_max
                             beta = br*D
                             global_params = get_global_params_dict(N, D, beta, mu)
                             
-                            key = get_dict_key(D, dd, nc, beta, sigma)
+                            key = get_dict_key(D, dd, nc, beta, f)
                             
                             if D==2 :
                                 sigma = get_sigma_d(sigma, 2)
@@ -95,7 +104,7 @@ def main():
                             res[key+'-r'] = r_dist
                             res[key+'-Y'] = Y_dist
     
-    filepath = 'data/sample10_betalim'
+    filepath = 'data/sample10_allbeta_fracsigma'
     with open(filepath+'.json', 'w') as write_file:
         json.dump(res, write_file, indent=4)
 
