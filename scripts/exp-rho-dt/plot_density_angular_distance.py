@@ -39,7 +39,7 @@ cmap = matplotlib.cm.get_cmap('viridis')
 Dthetas = np.linspace(1e-5, np.pi, 100000)
 kappa_i, kappa_j = 10., 10.
 ratio = 3.5
-N = 10000
+N = 1000
 average_kappa = 10.
 Dmin, Dmax = 1, 5
 
@@ -76,7 +76,7 @@ plt.legend(loc=(0.03, 0.6))
 #plt.savefig('pdf', dpi=600)
 #plt.ylim(0,10.)
 plt.xlim(-0.01, np.pi/4+0.01)
-plt.ylim(0, 100)
+plt.ylim(0, 60)
 plt.tight_layout()
 plt.show()
 
