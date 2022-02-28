@@ -26,7 +26,9 @@ from scipy.special import hyp2f1
 
 from util import *
 
-font = {'size'   : 13}
+#matplotlib.rcParams['text.usetex']= True
+font = {'size'   : 13, 
+    'family': 'serif'}
 
 matplotlib.rc('font', **font)
 
@@ -36,11 +38,14 @@ cmap = matplotlib.cm.get_cmap('viridis')
 
 Dthetas = np.linspace(1e-5, np.pi, 100000)
 kappa_i, kappa_j = 10., 10.
-ratio = 1.000000000000001
+ratio = 3.5
 N = 10000
 average_kappa = 10.
+Dmin, Dmax = 1, 5
 
-for D in range(10, 0, -1):
+plt.figure(figsize=(5.5,5))
+
+for D in range(Dmax, Dmin-1, -1):
     beta = ratio * D
     R = compute_radius(N, D)
     mu = compute_default_mu(D, beta, average_kappa)
@@ -55,23 +60,24 @@ for D in range(10, 0, -1):
     other_denum = normalization_2f1(D, beta, eta)
     print('int is', denum, error)
     print('denum 2f1 is ', other_denum)
-    c = cmap((D+1)/11)
+    c = cmap((D)/Dmax)
 
     plt.plot(Dthetas, pij*rho/denum, label=r'$D = {}$'.format(D), color=c)
     plt.plot(Dthetas, pij*rho/other_denum, ':', color=c)
     print('normalisation verif : ', np.sum((pij*rho/denum)[:-1]*np.diff(Dthetas)))
 
-    plt.axvline(eta**(1./D), color=c, alpha=0.5)
+    plt.axvline(eta**(1./D), color=c, alpha=0.8, linestyle='--')
 
-#plt.xticks([0, np.pi/4, np.pi/2, 3*np.pi/4, np.pi],['0', r'$\pi/4$', r'$\pi/2$', r'$3\pi/4$', r'$\pi$'])
+plt.xticks([0, np.pi/8, np.pi/4],['0', r'$\pi/8$', r'$\pi/4$'])
 plt.xlabel(r'$\Delta\theta$')
 plt.ylabel(r'$\rho(\Delta\theta\ |\ \kappa, \kappa\')$')
-plt.legend()
-plt.title(r'$\kappa={}$, $\kappa^,={}$, $\beta/d={}$'.format(kappa_i, kappa_j, ratio))
+plt.legend(loc=(0.03, 0.6))
+#plt.title(r'$\kappa={}$, $\kappa^,={}$, $\beta/d={}$'.format(kappa_i, kappa_j, ratio))
 #plt.savefig('pdf', dpi=600)
 #plt.ylim(0,10.)
-#plt.xlim(-0.01, 1.0)
+plt.xlim(-0.01, np.pi/4+0.01)
 plt.ylim(0, 100)
+plt.tight_layout()
 plt.show()
 
 #probability averaged over kappas
