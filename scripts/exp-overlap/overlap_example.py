@@ -11,7 +11,6 @@ Date : 01/02/2022
 
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.path as mpltPath
 from mpl_toolkits.mplot3d import Axes3D
 import sys
 sys.path.insert(0, '../../src/')
