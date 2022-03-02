@@ -18,7 +18,7 @@ from hyperbolic_random_graph import *
 from hrg_functions import *
 from geometric_functions import *
 
-beta_ratio = 3.5
+beta_ratio = 100.
 average_k = 10.
 N=1000
 

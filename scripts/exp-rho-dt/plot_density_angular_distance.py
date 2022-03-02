@@ -34,7 +34,7 @@ matplotlib.rc('font', **font)
 
 cmap = matplotlib.cm.get_cmap('viridis')
 
-
+limit=True
 
 Dthetas = np.linspace(1e-5, np.pi, 100000)
 kappa_i, kappa_j = 10., 10.
@@ -54,19 +54,30 @@ for D in range(Dmax, Dmin-1, -1):
     rho = np.sin(Dthetas)**(D-1)
     pij = connection_prob(Dthetas, kappa_i, kappa_j, D, beta, R=R, mu=mu)
     denum, error = integrated_connection_prob(kappa_i, kappa_j, D, beta, mu=mu, R=R)
+    
     eta = compute_eta(kappa_i, kappa_j, mu, R, D)
     print('D {}, eta = {}'.format(D, eta))
     #other_denum = integrated_connection_prob_eta(D, beta, eta)
     other_denum = normalization_2f1(D, beta, eta)
     print('int is', denum, error)
     print('denum 2f1 is ', other_denum)
+    
     c = cmap((D)/Dmax)
 
     plt.plot(Dthetas, pij*rho/denum, label=r'$D = {}$'.format(D), color=c)
-    plt.plot(Dthetas, pij*rho/other_denum, ':', color=c)
+    #plt.plot(Dthetas, pij*rho/other_denum, ':', color=c)
     print('normalisation verif : ', np.sum((pij*rho/denum)[:-1]*np.diff(Dthetas)))
 
-    plt.axvline(eta**(1./D), color=c, alpha=0.8, linestyle='--')
+    if limit:
+        beta = 1000.*D
+        mu = compute_default_mu(D, beta, average_kappa)
+        pij = connection_prob(Dthetas, kappa_i, kappa_j, D, beta, R=R, mu=mu)
+        denum, error = integrated_connection_prob(kappa_i, kappa_j, D, beta, mu=mu, R=R)
+        plt.plot(Dthetas, pij*rho/denum, '--', color=c)
+        plt.ylim(0, 32)
+    else:
+        plt.axvline(eta**(1./D), color=c, alpha=0.8, linestyle='--')
+        plt.ylim(0, 60)
 
 plt.xticks([0, np.pi/8, np.pi/4],['0', r'$\pi/8$', r'$\pi/4$'])
 plt.xlabel(r'$\Delta\theta$')
@@ -76,7 +87,7 @@ plt.legend(loc=(0.03, 0.6))
 #plt.savefig('pdf', dpi=600)
 #plt.ylim(0,10.)
 plt.xlim(-0.01, np.pi/4+0.01)
-plt.ylim(0, 60)
+
 plt.tight_layout()
 plt.show()
 

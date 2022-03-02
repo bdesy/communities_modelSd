@@ -31,9 +31,13 @@ def number_neighbors_S2(nc, dt):
 def number_neighbors_S1(nc, dt):
 	return (nc/np.pi)*dt
 
-def number_nearest_neighbors_S2_disks(nc):
+def number_nearest_neighbors_S2_disks_cos(nc):
 	angle = 3*np.arccos(1 - 2./nc)
 	return nc*0.5*(1-np.cos(angle)) - 1
+
+def number_nearest_neighbors_S2_disks(nc):
+	return 16./nc**2 -24./nc + 8
+
 
 def number_nearest_neighbors_S3(nc):
 	y = 3*(3*nc/2)**(1./3)
@@ -85,13 +89,14 @@ nnS1[1]=1
 plt.figure(figsize=(5.5,5))
 plt.plot(nc, nnS1, '^', c=cmap(0.), ms=5, label=r'$D=1$')
 plt.plot(nc, (number_nearest_neighbors_S2_disks(nc)), 's', c=cmap(2.2/5), ms=5, label=r'$D=2$')
+
 #plt.plot(nc, (number_nearest_neighbors_S3(nc)), 'o', c='coral', ms=5, label=r'$n_{nn}$ in $S^3$')
 #plt.plot(nc, (number_nearest_neighbors_S2_disks(nc)).astype(int), 'o', c='tomato', ms=2, label=r'$\lfloor n_{nn}\rfloor$')
 
 
 plt.xlabel(r'$n$')
 plt.ylabel(r'$n_n$')
-plt.xlim(2.5, 25.5)
+#plt.xlim(2.5, 25.5)
 plt.ylim(1., 14)
 plt.grid()
 plt.legend(loc=2)
