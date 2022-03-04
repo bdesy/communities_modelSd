@@ -55,6 +55,7 @@ def measure_stuff(block_mat, r_dist, Y_dist):
     Y_dist.append(np.mean(get_disparities(block_mat)))
     r_dist.append(get_stable_rank(block_mat))
 
+
 def main():
     N = 1000
     mu = 0.01
@@ -64,11 +65,20 @@ def main():
             'max_iterations': 1000, 
             'perturbation': 0.1,
             'verbose':False}
+    exp=2
 
-    sample_size = 10
-    nc_list = [5, 15, 25]
-    dd_list = ['exp', 'pwl']
-    beta_ratio_list = [1.5, 3.5, 10.]
+    if exp==1:
+        sample_size = 10
+        nc_list = [5, 15, 25]
+        dd_list = ['exp', 'pwl']
+        beta_ratio_list = [1.5, 3.5, 10.]
+
+    elif exp==2:
+        sample_size = 50
+        nc_list = [5, 15, 25]
+        dd_list = ['exp']
+        beta_ratio_list = [3.5]
+
     frac_sigma_axis = np.linspace(0.1, 0.9, 10)
 
     tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(frac_sigma_axis)
@@ -104,7 +114,7 @@ def main():
                             res[key+'-r'] = r_dist
                             res[key+'-Y'] = Y_dist
     
-    filepath = 'data/sample10_allbeta_fracsigma'
+    filepath = 'data/sample50_fracsigma_abstract'
     with open(filepath+'.json', 'w') as write_file:
         json.dump(res, write_file, indent=4)
 

@@ -23,8 +23,6 @@ font = {'size'   : 13,
 
 matplotlib.rc('font', **font)
 
-cmap = matplotlib.cm.get_cmap('viridis')
-
 def number_neighbors_S2(nc, dt):
 	return (nc/2.)*(1-np.cos(dt))
 
@@ -94,8 +92,8 @@ plt.plot(nc, (number_nearest_neighbors_S2_disks(nc)), 's', c=cmap(2.2/5), ms=5, 
 #plt.plot(nc, (number_nearest_neighbors_S2_disks(nc)).astype(int), 'o', c='tomato', ms=2, label=r'$\lfloor n_{nn}\rfloor$')
 
 
-plt.xlabel(r'$n$')
-plt.ylabel(r'$n_n$')
+plt.xlabel('nb points')
+plt.ylabel('nb near neighbors')
 #plt.xlim(2.5, 25.5)
 plt.ylim(1., 14)
 plt.grid()

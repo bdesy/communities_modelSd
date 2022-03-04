@@ -143,4 +143,7 @@ def get_disparities(weights):
     strengths = np.sum(weights, axis=0)
     num = weights**2
     Y = np.sum(num, axis=0)
-    return Y/strengths
+    return Y/strengths**2
+
+
+
