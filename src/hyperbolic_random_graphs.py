@@ -274,7 +274,7 @@ def optimize_kappas(N, tol, max_iterations, coordinates, kappas, R, beta, mu, ta
         print('Max number of iterations, algorithm stopped at eps = {}'.format(epsilon))
     return kappas, success
 
-#@njit
+@njit
 def build_probability_matrix(N, kappas, coordinates, R, beta, mu, D, order=None):
     mat = np.zeros((N,N))
     if order is None:
