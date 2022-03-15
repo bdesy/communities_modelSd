@@ -79,7 +79,47 @@ plt.savefig('figure_disparities_empty', dpi=600)
 plt.show()
 
 
-schema = True
+qty = 'r'
+plt.figure(figsize=(5.5, 5))
+for c in range(len(nc_list)):
+    nc = nc_list[c]
+    fmt = formats[c]
+    for D in [1,2]:
+        sigma_max = get_sigma_max(nc, D)
+        beta = br*D
+        y, err = [], []
+        for f in frac_sigma_axis:
+            key = get_dict_key(D, dd, nc, beta, f)+'-'+qty
+            data = np.array(data_dict[key])
+            y.append(np.mean(data))
+            err.append(np.std(data))
+        y = np.array(y)
+        err = np.array(err)
+        y *= nc
+        err *= nc
+        if nc == 25:
+            lab = label=r'$S^{}$'.format(D)
+        else:
+            lab=None
+
+        plt.errorbar(frac_sigma_axis, y, yerr=err, fmt=fmt,
+                         elinewidth=0.7, alpha=0.7,
+                         marker=m[D-1], ms=ms[D-1],
+                         color=colors[D-1], label=lab)
+    plt.plot(bidon, np.ones(bidon.shape), 
+                fmt, c='k', alpha=0.5,
+                label=r'$n = {}$'.format(nc))
+
+plt.ylabel('average disparity')
+plt.xlabel(r'angular dispersion')
+plt.xlim(0.05,0.95)
+plt.ylim(0.35, 1.62)
+plt.legend(loc=1)
+plt.savefig('figure_disparities_empty', dpi=600)
+plt.show()
+
+
+schema = False
 N=300
 s=0.04
 ms = 4

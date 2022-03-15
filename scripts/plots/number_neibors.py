@@ -23,6 +23,7 @@ font = {'size'   : 12,
 
 matplotlib.rc('font', **font)
 
+
 def number_neighbors_S2(nc, dt):
 	return (nc/2.)*(1-np.cos(dt))
 
@@ -101,7 +102,8 @@ for n in nc:
 m=4
 
 fig, ax1 = plt.subplots(figsize=(5,4))
-
+plt.rcParams.update({
+    "text.usetex": True,})
 plt.plot(nc, nnS1, 's', c=cmap(1./20), ms=m-.4, label=r'$D=1$', zorder=4)
 plt.plot(nc, (number_nearest_neighbors_S2_disks_cos(nc)), '^', c=cmap(1.1/3), ms=m, label=r'$D=2$', zorder=2)
 for n in nc:
@@ -113,7 +115,7 @@ for n in nc:
 
 
 plt.xlabel(r'$n$')
-plt.ylabel(r'$n_n$')
+plt.ylabel(r'$n_{\mathrm{nn}}$')
 plt.xlim(0., 40.)
 plt.ylim(0., 30.)
 plt.grid()
