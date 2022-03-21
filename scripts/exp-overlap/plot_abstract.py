@@ -28,7 +28,7 @@ dd = 'exp'
 br = 3.5
 frac_sigma_axis = np.linspace(0.1, 0.9, 10)
 
-with open('data/sample10_allbeta_fracsigma.json', 'r') as read_file:
+with open('data/sample50_fracsigma_abstract.json', 'r') as read_file:
     data_dict = json.load(read_file)
 
 cmap = matplotlib.cm.get_cmap('viridis')
