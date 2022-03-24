@@ -14,21 +14,15 @@ import matplotlib.pyplot as plt
 import matplotlib 
 from mpl_toolkits.mplot3d import Axes3D
 from scipy.optimize import fsolve
+from scipy.integrate import quad
+from scipy.special import gamma
 import sys
 sys.path.insert(0, '../../src/')
 from geometric_functions import *
 
 font = {'size'   : 12, 
     'family': 'serif'}
-
 matplotlib.rc('font', **font)
-
-
-def number_neighbors_S2(nc, dt):
-	return (nc/2.)*(1-np.cos(dt))
-
-def number_neighbors_S1(nc, dt):
-	return (nc/np.pi)*dt
 
 def number_nearest_neighbors_S2_disks_cos(nc):
 	angle = 3*np.arccos(1 - 2./nc)
@@ -58,66 +52,67 @@ nc_list = np.array([5,10,15,20,25])
 cmap = matplotlib.cm.get_cmap('viridis')
 dthetas = np.linspace(0, np.pi, 1000)
 
-'''
-fig = plt.figure(figsize=(5,7))
+def number_nearest_neighbors_SD(n, D):
+	if D==1:
+		nnn = np.ones(n.shape)*2
+		nnn[0]=0
+		nnn[1]=1
+	elif D==2:
+		nnn = number_nearest_neighbors_S2_disks_cos(n)
+	elif D==3:
+		nnn = []
+		for i in n:
+			nnn.append(number_nearest_neighbors_S3_exact(i))
+	else:
+		nnn = []
+		for i in n:
+			phi_i = find_characteristic_angle(i, D)
+			nnn.append(compute_number_nearest_neighbors_general(i, D, phi_i))
+	return np.array(nnn)
 
-fig.add_subplot(211)
-for i in range(5):
-	nc = nc_list[i]
-	c = cmap(nc/np.max(nc_list))
-	plt.plot(dthetas, number_neighbors_S2(nc, dthetas), c=c, label='{} points'.format(nc))
-plt.legend()
-plt.xticks([0, np.pi/2, np.pi], ['0', r'$\pi/2$', r'$\pi$'])
-plt.xlabel(r'$\Delta\theta$')
+def phi_n_general(phi, n, D):
+	integral, err = quad(power_sine, 0, phi, args=(D))
+	res = gamma(D/2) * np.sqrt(np.pi) / (gamma((D+1)/2) * n)
+	return integral - res
 
-fig.add_subplot(212)
-for i in range(5):
-	nc = nc_list[i]
-	c = cmap(nc/np.max(nc_list))
-	plt.plot(dthetas, number_neighbors_S1(nc, dthetas), c=c, label='{} points'.format(nc))
-plt.legend()
-plt.xticks([0, np.pi/2, np.pi], ['0', r'$\pi/2$', r'$\pi$'])
-plt.xlabel(r'$\Delta\theta$')
-plt.show()
+def find_characteristic_angle(n, D):
+	phi = fsolve(phi_n_general, np.pi/D, args=(n, D))
+	return phi[0]
+
+def find_characteristic_angle_cust(n, D):
+	phi_n = np.pi/D
+	res = gamma(D/2) * np.sqrt(np.pi) / (gamma((D+1)/2) * n)
+	integral, err = quad(power_sine, 0, phi_n, args=(D))
+	while abs(res-integral)>1e-5:
+		phi_n += (res-integral)/(10*D)
+		integral, err = quad(power_sine, 0, phi_n, args=(D))
+	return phi_n
+
+def power_sine(theta, D):
+	return np.sin(theta)**(D-1)
+
+def compute_number_nearest_neighbors_general(n, D, phi_n):
+	integral, err = quad(power_sine, 0, 3*phi_n, args=(D))
+	nnn = integral * n * gamma(D/2) / gamma((D+1)/2)
+	return nnn - 1
 
 
-plt.plot(dthetas, number_neighbors_S1(25, dthetas)/25., c='darkcyan', label=r'$S^1$')
-plt.plot(dthetas, number_neighbors_S2(25, dthetas)/25., c='coral', label=r'$S^2$')
-plt.ylabel(r'$\%$ of all neighbors')
-plt.xticks([0, np.pi/2, np.pi], ['0', r'$\pi/2$', r'$\pi$'])
-plt.legend()
-plt.xlabel(r'$\Delta\theta$')
-plt.show()
-'''
-
-nc = np.arange(60)+1
-
-nnS1 = np.ones(nc.shape)*2
-nnS1[0]=0
-nnS1[1]=1
-
-for n in nc:
-	number_nearest_neighbors_S3_exact(n)
+nc = np.arange(1000)+1
 
 m=4
 
 fig, ax1 = plt.subplots(figsize=(5,4))
 plt.rcParams.update({
     "text.usetex": True,})
-plt.plot(nc, nnS1, 's', c=cmap(1./20), ms=m-.4, label=r'$D=1$', zorder=4)
-plt.plot(nc, (number_nearest_neighbors_S2_disks_cos(nc)), '^', c=cmap(1.1/3), ms=m, label=r'$D=2$', zorder=2)
-for n in nc:
-	if n==3:
-		plt.plot(n, number_nearest_neighbors_S3_exact(n), 'd', c=cmap(2./3), ms=m, label=r'$D=3$', zorder=0)
-	else:
-		plt.plot(n, number_nearest_neighbors_S3_exact(n), 'd', c=cmap(2./3), ms=m, zorder=0)
-#plt.plot(nc, (number_nearest_neighbors_S2_disks(nc)).astype(int), 'o', c='tomato', ms=2, label=r'$\lfloor n_{nn}\rfloor$')
 
+colors =[cmap(1./20), cmap(1.1/3), cmap(2./3), cmap(9./10), cmap(1.0), 'coral']
+for D in [1,2,3,4,5, 6]:
+	plt.plot(nc, number_nearest_neighbors_SD(nc, D), 'o', c=colors[D-1], ms=m-.4, label=r'$D={}$'.format(D))
 
 plt.xlabel(r'$n$')
 plt.ylabel(r'$n_{\mathrm{nn}}$')
-plt.xlim(0., 40.)
-plt.ylim(0., 30.)
+plt.xlim(0., 1000.)
+#plt.ylim(0., 100.)
 plt.grid()
 plt.legend(loc=2)
 
@@ -126,10 +121,10 @@ plt.legend(loc=2)
 #ax2.set_yticks([2.,8.,26.], [2.,8.,26.])
 
 plt.tight_layout()
-plt.savefig('figure_neighbors_empty', dpi=600)
+#plt.savefig('figure_neighbors_empty', dpi=600)
 plt.show()
 
-schema = True
+schema = False
 if schema:
 	thetas = np.linspace(0, 2*np.pi, 20)
 	circ = np.linspace(0, 2*np.pi, 1500)
