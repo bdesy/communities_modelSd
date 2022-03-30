@@ -97,6 +97,13 @@ def get_communities_array(n, sizes):
         c+=1
     return comms_array
 
+def get_sigma_max(nc, D):
+    if D==1:
+        sigma = np.sqrt(2*np.pi)/nc
+    elif D==2:
+        sigma = np.sqrt(2./nc)
+    return sigma
+
 def randomly_rotate_coordinates(coordinates, N, rng, reach=np.pi):
     sign = (rng.integers(2)-0.5)*2.
     x_angle, y_angle, z_angle = rng.random(size=3)*reach*sign

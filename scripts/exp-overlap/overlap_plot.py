@@ -50,50 +50,20 @@ for c in range(len(nc_list)):
             data = np.array(data_dict[key])
             y[:,j] = data[:]
             j+=1
-        for i in range(len(data)):
-            plt.plot(frac_sigma_axis, y[i, :],
-                    linewidth=1, alpha=0.1, c='grey')
+        #for i in range(len(data)):
+        #    plt.plot(frac_sigma_axis, y[i, :],
+        #            linewidth=1, alpha=0.1, c='grey')
         y, err = np.mean(y, axis=0), np.std(y, axis=0)
-        #y = transform_Y(y, nc)
-        plt.errorbar(frac_sigma_axis, y, yerr=err, fmt=formats[c],
-                         capsize=2, elinewidth=1, capthick=1, 
-                         color=colors[D-1], label=r'$S^{}$, $n_c={}$'.format(D, nc))
+
+        plt.plot(frac_sigma_axis, y, linestyle=formats[c], color=colors[D-1], 
+                label=r'$S^{}$, $n={}$'.format(D, nc))
+        plt.fill_between(frac_sigma_axis, y-err, y+err, alpha=0.3, color=colors[D-1])
 plt.title(r'$\beta/D={}, $'.format(br)+dd+' degree distribution')
 plt.ylabel(qty)
 plt.xlabel(r'$\sigma/\sigma_m$')
 plt.xlim(0.05,0.95)
 plt.legend()
-#plt.savefig('figures/sample10_allbeta_fracsigma/beta{}-'.format(br)+dd+'-'+qty+'.png')
-plt.show()
-
-qty='Y'
-plt.figure(figsize=(5.5,5))
-for c in range(len(nc_list)):
-    nc = nc_list[c]
-    for D in [1,2]:
-        sigma_max = get_sigma_max(nc, D)
-        beta = br*D
-        y = np.zeros((len(data), len(frac_sigma_axis)))
-        j=0
-        for f in frac_sigma_axis:
-            key = get_dict_key(D, dd, nc, beta, f)+'-'+qty
-            data = np.array(data_dict[key])
-            y[:,j] = data[:]
-            j+=1
-        for i in range(len(data)):
-            if i==1:
-                plt.plot(frac_sigma_axis, y[i, :], linestyle=formats[c],
-                    linewidth=1, alpha=0.2, c=colors[D-1], 
-                    label=r'$S^{}$, $n_c={}$'.format(D, nc))
-            else:
-                plt.plot(frac_sigma_axis, y[i, :], linewidth=1, alpha=0.2, c=colors[D-1])
-
-plt.title(r'$\beta/D={}, $'.format(br)+dd+' degree distribution')
-plt.ylabel(qty)
-plt.xlabel(r'$\sigma/\sigma_m$')
-plt.xlim(0.05,0.95)
-plt.legend()
-#plt.savefig('figures/sample10_allbeta_fracsigma/beta{}-'.format(br)+dd+'-'+qty+'.png')
+plt.savefig('figures/sample10_allbeta_fracsigma/beta{}-'.format(br)+dd+'-'+qty+'.png')
 plt.show()
 
 def r_toeplitz(n):
@@ -127,15 +97,18 @@ for c in range(len(nc_list)):
         y = np.array(y)
         err = np.array(err)
         #y = transform_r(y, nc)
-        plt.errorbar(frac_sigma_axis, y, yerr=err, fmt=formats[c],
-                         capsize=2, elinewidth=1, capthick=1, 
-                         color=colors[D-1], label=r'$S^{}$, $n={}$'.format(D, nc))
+        plt.plot(frac_sigma_axis, y, linestyle=formats[c], color=colors[D-1], 
+                label=r'$S^{}$, $n={}$'.format(D, nc))
+        plt.fill_between(frac_sigma_axis, y-err, y+err, alpha=0.3, color=colors[D-1])
+        #plt.errorbar(frac_sigma_axis, y, yerr=err, fmt=formats[c],
+        #                 capsize=2, elinewidth=1, capthick=1, 
+        #                 color=colors[D-1], label=r'$S^{}$, $n={}$'.format(D, nc))
     #plt.axhline(r_toeplitz(nc)/nc, linestyle=formats[c], c='k', alpha=0.2)
 plt.title(r'$\beta/D={}, $'.format(br)+dd+' degree distribution')
 plt.ylabel(qty)
 plt.xlabel(r'$\sigma/\sigma_m$')
 plt.xlim(0.05,0.95)
 plt.legend()
-#plt.savefig('figures/sample10_allbeta_fracsigma/beta{}-'.format(br)+dd+'-'+qty+'.png')
+plt.savefig('figures/sample10_allbeta_fracsigma/beta{}-'.format(br)+dd+'-'+qty+'.png')
 plt.show()
 

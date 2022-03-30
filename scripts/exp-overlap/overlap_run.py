@@ -18,13 +18,6 @@ from hrg_functions import *
 from geometric_functions import *
 from overlap_util import *
 
-def get_sigma_max(nc, D):
-    if D==1:
-        sigma = np.sqrt(2*np.pi)/nc
-    elif D==2:
-        sigma = np.sqrt(2./nc)
-    return sigma
-
 def get_dict_key(D, dd, nc, beta, f):
     return 'S{}-'.format(D)+dd+'-{}coms-{}beta-{:.2f}sigmam'.format(nc, beta, f)
 

@@ -34,11 +34,11 @@ def get_weights(mat):
 parser = argparse.ArgumentParser()
 parser.add_argument('-nc', '--nb_communities', type=int, default=8,
                         help='number of communities to put on the sphere')
-parser.add_argument('-dd', '--degree_distribution', type=str, default='pwl',
+parser.add_argument('-dd', '--degree_distribution', type=str, default='exp',
                         choices=['poisson', 'exp', 'pwl'],
                         help='shape of the degree distribution')
-parser.add_argument('-s', '--sigma', type=float,
-                        help='dispersion of points of angular clusters in d=1')
+parser.add_argument('-fs', '--sigma', type=float,
+                        help='fraction of maximal sigma')
 parser.add_argument('-br', '--beta_ratio', type=float, default=3.5,
                         help='value of beta for d=1')
 parser.add_argument('-p', '--placement', type=str, default='uniformly',
@@ -47,18 +47,13 @@ parser.add_argument('-p', '--placement', type=str, default='uniformly',
 parser.add_argument('-ok', '--optimize_kappas', type=bool, default=False)
 args = parser.parse_args() 
 
-def get_other_sigma1(nc):
-    sigma = np.pi/(2*nc)
-    return sigma
 
 #setup
 N = 1000
 nb_com = args.nb_communities
-if args.sigma is None:
-    sigma1 = get_other_sigma1(nb_com)
-else:
-    sigma1 = args.sigma
-sigma2 = get_sigma_d(sigma1, 2)
+frac_sigma_max = args.sigma
+sigma1 = get_sigma_max(nb_com, 1)*frac_sigma_max
+sigma2 = get_sigma_max(nb_com, 2)*frac_sigma_max
 
 beta_r = args.beta_ratio
 rng = np.random.default_rng()
@@ -232,5 +227,5 @@ m2 = normalize_block_matrix(m2, nb_com)
 
 plot_matrices(S1, S2, m1, m2)
 
-plot_quantities(m1, m2)
+#plot_quantities(m1, m2)
 
