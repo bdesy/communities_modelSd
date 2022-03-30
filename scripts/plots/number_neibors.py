@@ -52,6 +52,10 @@ nc_list = np.array([5,10,15,20,25])
 cmap = matplotlib.cm.get_cmap('viridis')
 dthetas = np.linspace(0, np.pi, 1000)
 
+def get_approximate_phi_n(n, D):
+	phi = D/n * np.sqrt(2*np.pi/(D-1))
+	return phi**(1./D)
+
 def number_nearest_neighbors_SD(n, D):
 	if D==1:
 		nnn = np.ones(n.shape)*2
@@ -67,6 +71,7 @@ def number_nearest_neighbors_SD(n, D):
 		nnn = []
 		for i in n:
 			phi_i = find_characteristic_angle(i, D)
+			#print('D={}, n={}'.format(D,i), phi_i, get_approximate_phi_n(i, D))
 			nnn.append(compute_number_nearest_neighbors_general(i, D, phi_i))
 	return np.array(nnn)
 
