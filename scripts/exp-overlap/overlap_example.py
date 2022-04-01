@@ -119,9 +119,8 @@ for D in [1,2]:
     SD.build_probability_matrix(order=order) 
     #SD.communities = get_communities_array(N, sizes)
     labels = np.arange(nb_com)
-    print(centers[D-1])
     SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
-    print(SD.communities)
+
 
 def plot_matrices(S1, S2, m1, m2, summ1, summ2):
     #the sphere
@@ -135,7 +134,7 @@ def plot_matrices(S1, S2, m1, m2, summ1, summ2):
     yy = np.sin(phi)*np.sin(theta)
     zz = np.cos(phi)
     #plot sphere
-    fig =plt.figure(figsize=(6,17))
+    fig =plt.figure(figsize=(6,7))
     ax = fig.add_subplot(321, projection='3d')
     ax.plot_surface(
         x, y, z,  rstride=1, cstride=1, color='white', alpha=0.7, linewidth=0, zorder=10)
@@ -240,14 +239,14 @@ def plot_disparities(B1, B2):
     plt.show()
 
 
-m1 = get_community_block_matrix(S1, sizes)
-m2 = get_community_block_matrix(S2, sizes)
+m1 = get_community_block_matrix(S1, nb_com)
+m2 = get_community_block_matrix(S2, nb_com)
 
 summ1 = np.sum(m1*(1-np.eye(nb_com)))/2
 summ2 = np.sum(m2*(1-np.eye(nb_com)))/2
 
-m1 = normalize_block_matrix(m1, nb_com)
-m2 = normalize_block_matrix(m2, nb_com)
+#m1 = normalize_block_matrix(m1, nb_com)
+#m2 = normalize_block_matrix(m2, nb_com)
 
 plot_matrices(S1, S2, m1, m2, summ1, summ2)
 

@@ -27,19 +27,24 @@ def normalize_block_matrix(block_mat, nc):
     norm =  np.sum(block_mat)/2
     return block_mat/norm
 
-def get_community_block_matrix(SD, sizes):
-    nc = len(sizes)
-    block_mat = np.zeros((nc, nc))
-    i_i, j_i = 0, 0
-    for i in range(nc):
-        for j in range(nc):
-            block_mat[i,j] = np.sum(SD.probs[i_i:i_i+sizes[i], j_i:j_i+sizes[j]])
-            j_i += sizes[j]  
-        i_i += sizes[i]
-        j_i = 0
+def get_community_block_matrix(SD, n):
+    labels = list(set(SD.communities))
+    block_mat = np.zeros((n, n))
+    for i in range(n):
+        nodes_in_u = np.where(SD.communities==labels[i])[0]
+        for j in range(i, n):
+            nodes_in_v = np.where(SD.communities==labels[j])[0]
+            block_mat[i,j] = get_block_sum(SD.probs, nodes_in_u, nodes_in_v)
     assert (np.sum(block_mat)-np.sum(SD.probs)<1e-5), 'sum of probs not equal'
-    return block_mat
+    return block_mat + np.triu(block_mat, k=1).T
 
+@njit
+def get_block_sum(probs, nodes_in_u, nodes_in_v):
+    indices = [[a,b] for a in nodes_in_u for b in nodes_in_v]
+    block=0
+    for i in indices:
+        block+=probs[i[0], i[1]]
+    return block
 
 def get_coordinates(N, D, nc, sigma, output_centers=False):
     if output_centers==False:
