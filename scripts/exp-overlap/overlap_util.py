@@ -65,15 +65,16 @@ def get_coordinates(N, D, nc, sigma, output_centers=False):
         return coordinates, centers
 
 
-def get_order_theta_within_communities(SD, sizes):
+def get_order_theta_within_communities(SD, n):
+    labels = list(set(SD.communities))
     theta = SD.coordinates.T[0]
-    i = 0
-    order = np.argsort(theta[i:sizes[0]]).tolist()
-    i += sizes[0]
-    for s in sizes[1:]:
-        order_s = (np.argsort(theta[i:i+s])+i).tolist()
-        order += order_s
-        i += s
+    sorted_indices = np.argsort(theta)
+    order = []
+    for u in range(n):
+        nodes_in_u = np.where(SD.communities==labels[u])[0]
+        for i in sorted_indices:
+            if i in nodes_in_u:
+                order.append(i)
     assert set(np.arange(SD.N).tolist())==set(order), 'not all indices in order'
     return np.array(order)
 

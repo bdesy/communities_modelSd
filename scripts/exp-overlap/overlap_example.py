@@ -114,12 +114,14 @@ for D in [1,2]:
         SD.optimize_kappas(rng)
         SD.reassign_parameters()
 
-    order = get_order_theta_within_communities(SD, sizes)
+    labels = np.arange(nb_com)
+    SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
+
+    order = get_order_theta_within_communities(SD, nb_com)
 
     SD.build_probability_matrix(order=order) 
     #SD.communities = get_communities_array(N, sizes)
-    labels = np.arange(nb_com)
-    SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
+    
 
 
 def plot_matrices(S1, S2, m1, m2, summ1, summ2):
@@ -245,8 +247,8 @@ m2 = get_community_block_matrix(S2, nb_com)
 summ1 = np.sum(m1*(1-np.eye(nb_com)))/2
 summ2 = np.sum(m2*(1-np.eye(nb_com)))/2
 
-#m1 = normalize_block_matrix(m1, nb_com)
-#m2 = normalize_block_matrix(m2, nb_com)
+m1 = normalize_block_matrix(m1, nb_com)
+m2 = normalize_block_matrix(m2, nb_com)
 
 plot_matrices(S1, S2, m1, m2, summ1, summ2)
 
