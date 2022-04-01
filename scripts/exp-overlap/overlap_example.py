@@ -76,6 +76,7 @@ else:
     centersS1 = (project_coordinates_on_circle_with_R(centersS2, R, nb_com).T[0]).reshape((nb_com, 1))
 
 coordinates = [coordinatesS1, coordinatesS2]
+centers = [centersS1, centersS2]
 sizes = get_equal_communities_sizes(nb_com, N)
 
 
@@ -116,28 +117,33 @@ for D in [1,2]:
     order = get_order_theta_within_communities(SD, sizes)
 
     SD.build_probability_matrix(order=order) 
-    SD.communities = get_communities_array(N, sizes)
+    #SD.communities = get_communities_array(N, sizes)
+    labels = np.arange(nb_com)
+    print(centers[D-1])
+    SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
+    print(SD.communities)
 
-def plot_matrices(S1, S2, m1, m2):
+def plot_matrices(S1, S2, m1, m2, summ1, summ2):
     #the sphere
     phi, theta = np.mgrid[0.0:np.pi:100j, 0.0:2.0*np.pi:100j]
-    x = np.sin(phi)*np.cos(theta)
-    y = np.sin(phi)*np.sin(theta)
-    z = np.cos(phi)
+    x = np.sin(phi)*np.cos(theta)*0.95
+    y = np.sin(phi)*np.sin(theta)*0.95
+    z = np.cos(phi)*0.95
     #points on the sphere
     theta, phi = S2.coordinates.T[0], S2.coordinates.T[1]
     xx = np.sin(phi)*np.cos(theta)
     yy = np.sin(phi)*np.sin(theta)
     zz = np.cos(phi)
     #plot sphere
-    fig =plt.figure(figsize=(6,7))
+    fig =plt.figure(figsize=(6,17))
     ax = fig.add_subplot(321, projection='3d')
     ax.plot_surface(
-        x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
+        x, y, z,  rstride=1, cstride=1, color='white', alpha=0.7, linewidth=0, zorder=10)
     for c in range(nb_com):
         color = plt.cm.tab10(c%10)
         nodes = np.where(S2.communities==c)
-        ax.scatter(xx[nodes],yy[nodes],zz[nodes],color=color,s=5)
+        ax.scatter(xx[nodes],yy[nodes],zz[nodes],color=color,s=9)
+
     ax.set_xlim([-1.,1.])
     ax.set_ylim([-1.,1.])
     ax.set_zlim([-1.,1.])
@@ -150,8 +156,8 @@ def plot_matrices(S1, S2, m1, m2):
     theta = np.mod(S1.coordinates.flatten(), 2*np.pi)
     for c in range(nb_com):
         color = plt.cm.tab10(c%10)
-        nodes = np.where(S2.communities==c)
-        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=2, alpha=0.3)
+        nodes = np.where(S1.communities==c)
+        ax.scatter(theta[nodes],np.ones(N)[nodes],color=color,s=5, alpha=0.3)
 
     plt.ylim(0,1.5)
     ax.set_xticks([])
@@ -181,7 +187,7 @@ def plot_matrices(S1, S2, m1, m2):
     ax.set_xticks([])
     ax.set_yticks([])
     r = get_stable_rank(m2)
-    ax.set_title('block matrix S2, r={:.2f}'.format(r))
+    ax.set_title('S2, r={:.2f}, m={:.0f}'.format(r,summ1))
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
 
     ax = fig.add_subplot(326)
@@ -189,9 +195,8 @@ def plot_matrices(S1, S2, m1, m2):
     ax.set_xticks([])
     ax.set_yticks([])
     r = get_stable_rank(m1)
-    ax.set_title('block matrix S1, r={:.2f}'.format(r))
+    ax.set_title('S1, r={:.2f}, m={:.0f}'.format(r,summ2))
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-
     plt.tight_layout()
     plt.show()
 
@@ -217,15 +222,34 @@ def plot_quantities(B1, B2):
     ax[2, 0].set_ylabel('disparities')
     plt.show()
 
+def plot_disparities(B1, B2):
+    fig, ax = plt.subplots(nrows=1, ncols=2, sharey='row', figsize=(6,3))
+    models = [B2, B1]
+    dims = [2,1]
+    for i in [0,1]:
+        D=dims[i]
+        disparities = np.sort(get_disparities(models[i]))[::-1]
+        r = get_stable_rank(models[i])
+        mu = np.mean(disparities)
+        c_v = np.std(disparities)/mu
+        ax[i].axhline(mu, c='k', alpha=0.3)
+        ax[i].plot(disparities, 'o', ms=2, label='$\mu$={:0.2f}\n$\sigma$={:0.2f}\n$\sigma/\mu$={:0.2f}\n$\mu/\sigma$={:0.2f}'.format(mu, np.std(disparities), c_v, 1./c_v))
+        ax[i].set_title(r'block matrix $S^{}$'.format(D))
+        ax[i].legend()
+    ax[0].set_ylabel('disparity of each community')
+    plt.show()
 
 
 m1 = get_community_block_matrix(S1, sizes)
 m2 = get_community_block_matrix(S2, sizes)
 
+summ1 = np.sum(m1*(1-np.eye(nb_com)))/2
+summ2 = np.sum(m2*(1-np.eye(nb_com)))/2
+
 m1 = normalize_block_matrix(m1, nb_com)
 m2 = normalize_block_matrix(m2, nb_com)
 
-plot_matrices(S1, S2, m1, m2)
+plot_matrices(S1, S2, m1, m2, summ1, summ2)
 
-#plot_quantities(m1, m2)
+plot_disparities(m1, m2)
 

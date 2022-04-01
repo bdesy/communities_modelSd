@@ -97,6 +97,23 @@ def get_communities_array(n, sizes):
         c+=1
     return comms_array
 
+def get_communities_array_closest(N, D, coordinates, centers, labels):
+    comms_array = np.zeros(N, dtype=int)
+    for i in range(N):
+        c = find_closest_community(D, coordinates[i], centers, labels)
+        comms_array[i] = c
+    return comms_array
+
+def find_closest_community(D, coordinate, centers, community_labels):
+    closest_dist = np.pi
+    c = None
+    for u in range(len(centers)):
+        dist_u = compute_angular_distance(coordinate, centers[u], D, euclidean=False)%np.pi
+        if dist_u < closest_dist:
+            c = community_labels[u]
+            closest_dist = dist_u
+    return c
+
 def get_sigma_max(nc, D):
     if D==1:
         sigma = np.sqrt(2*np.pi)/nc

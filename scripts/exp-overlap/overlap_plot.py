@@ -108,7 +108,7 @@ plt.title(r'$\beta/D={}, $'.format(br)+dd+' degree distribution')
 plt.ylabel(qty)
 plt.xlabel(r'$\sigma/\sigma_m$')
 plt.xlim(0.05,0.95)
-plt.legend()
+plt.legend(loc=4)
 plt.savefig('figures/sample10_allbeta_fracsigma/beta{}-'.format(br)+dd+'-'+qty+'.png')
 plt.show()
 
