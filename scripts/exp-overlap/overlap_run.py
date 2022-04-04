@@ -72,7 +72,7 @@ def main():
             'perturbation': 0.1,
             'verbose':False}
     
-    exp=2
+    exp='test'
 
     if exp==1:
         sample_size = 10
@@ -136,7 +136,7 @@ def main():
                             res[key+'-Y'] = data[1]
                             res[key+'-r'] = data[2]
     
-    filepath = 'data/test'
+    filepath = '../../scratch/data/test'
     with open(filepath+'.json', 'w') as write_file:
         json.dump(res, write_file, indent=4)
 
