@@ -136,7 +136,7 @@ def main():
                             res[key+'-Y'] = data[1]
                             res[key+'-r'] = data[2]
     
-    filepath = '../../../scratch/data/test'
+    filepath = '../../../scratch/data/test2'
     with open(filepath+'.json', 'w') as write_file:
         json.dump(res, write_file, indent=4)
 
