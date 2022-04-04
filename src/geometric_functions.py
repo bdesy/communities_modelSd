@@ -109,10 +109,6 @@ def rotate_euclidean_coordinates(coordinates, N, rotation_matrix):
     return new_coordinates
 
 #ramdom sampling functions
-def get_sigma_d(sigma, D):
-    sigma_d = 2*np.pi*np.exp(1-D)*sigma**2
-    power = 1./(2*D)
-    return (1./np.sqrt(2*np.pi))*sigma_d**power
 
 def sample_gaussian_points_on_sphere(x_o, y_o, z_o, sigma):
     x = np.random.normal(loc=x_o, scale=sigma)

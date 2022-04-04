@@ -22,8 +22,7 @@ from scipy.stats import norm
 
 from time import time
 
-def normalize_block_matrix(block_mat, nc):
-    block_mat *= 1-np.eye(nc)
+def normalize_block_matrix(block_mat, n):
     norm =  np.sum(block_mat)/2
     return block_mat/norm
 
@@ -36,7 +35,9 @@ def get_community_block_matrix(SD, n):
             nodes_in_v = np.where(SD.communities==labels[j])[0]
             block_mat[i,j] = get_block_sum(SD.probs, nodes_in_u, nodes_in_v)
     assert (np.sum(block_mat)-np.sum(SD.probs)<1e-5), 'sum of probs not equal'
-    return block_mat + np.triu(block_mat, k=1).T
+    block_mat += np.triu(block_mat, k=1).T
+    block_mat *= (1-np.eye(n))
+    return block_mat
 
 @njit
 def get_block_sum(probs, nodes_in_u, nodes_in_v):
