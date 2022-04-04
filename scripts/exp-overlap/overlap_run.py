@@ -17,6 +17,16 @@ from hyperbolic_random_graph import *
 from hrg_functions import *
 from geometric_functions import *
 from overlap_util import *
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-e', '--experiment', type=str, default='test',
+                        help='dictate which experiment to run')
+parser.add_argument('-f', '--filename', type=str, default='test',
+                        help='output file name')
+args = parser.parse_args()
+exp = args.experiment
+
 
 def get_dict_key(D, dd, nc, beta, f):
     return 'S{}-'.format(D)+dd+'-{}coms-{}beta-{:.2f}sigmam'.format(nc, beta, f)
@@ -72,18 +82,17 @@ def main():
             'perturbation': 0.1,
             'verbose':False}
     
-    exp=2
 
-    if exp==1:
+    if exp=='1':
         sample_size = 10
         nc_list = [5, 15, 25]
         dd_list = ['exp', 'pwl']
         beta_ratio_list = [1.5, 3.5, 10.]
         frac_sigma_axis = np.linspace(0.1, 0.9, 10)
 
-    elif exp==2:
+    elif exp=='2':
         sample_size = 50
-        nc_list = [5, 15, 25]
+        nc_list = [5, 15, 25, 50]
         dd_list = ['exp']
         beta_ratio_list = [3.5]
         frac_sigma_axis = np.linspace(0.05, 0.95, 20)
@@ -136,7 +145,7 @@ def main():
                             res[key+'-Y'] = data[1]
                             res[key+'-r'] = data[2]
     
-    filepath = '../../../scratch/data/experiment0404'
+    filepath = '../../../scratch/data/'+args.filename
     with open(filepath+'.json', 'w') as write_file:
         json.dump(res, write_file, indent=4)
 
