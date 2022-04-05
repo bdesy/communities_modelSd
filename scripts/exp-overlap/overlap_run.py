@@ -92,7 +92,7 @@ def main():
 
     elif exp=='2':
         sample_size = 50
-        nc_list = [5, 15, 25, 50]
+        nc_list = [15]
         dd_list = ['exp']
         beta_ratio_list = [3.5]
         frac_sigma_axis = np.linspace(0.05, 0.95, 20)
