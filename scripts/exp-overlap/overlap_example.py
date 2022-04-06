@@ -28,101 +28,7 @@ def get_strengths(mat):
 def get_weights(mat):
     triu = np.where(np.triu(mat)>0)
     out = mat[triu]
-    return np.sort(out.flatten())[::-1]
-
-#parse input arguments
-parser = argparse.ArgumentParser()
-parser.add_argument('-nc', '--nb_communities', type=int, default=8,
-                        help='number of communities to put on the sphere')
-parser.add_argument('-dd', '--degree_distribution', type=str, default='exp',
-                        choices=['poisson', 'exp', 'pwl'],
-                        help='shape of the degree distribution')
-parser.add_argument('-fs', '--sigma', type=float,
-                        help='fraction of maximal sigma')
-parser.add_argument('-br', '--beta_ratio', type=float, default=3.5,
-                        help='value of beta for d=1')
-parser.add_argument('-p', '--placement', type=str, default='uniformly',
-                        choices = ['uniformly', 'randomly'],
-                        help='nodes placement in the spaces')
-parser.add_argument('-ok', '--optimize_kappas', type=bool, default=False)
-args = parser.parse_args() 
-
-
-#setup
-N = 1000
-nb_com = args.nb_communities
-frac_sigma_max = args.sigma
-sigma1 = get_sigma_max(nb_com, 1)*frac_sigma_max
-sigma2 = get_sigma_max(nb_com, 2)*frac_sigma_max
-
-beta_r = args.beta_ratio
-rng = np.random.default_rng()
-
-#sample angular coordinates on sphere and circle
-coordinatesS2, centersS2 = get_communities_coordinates(nb_com, N, 
-                                                    sigma2, 
-                                                    place=args.placement, 
-                                                    output_centers=True)
-if args.placement=='uniformly':
-    coordinatesS1, centers = get_communities_coordinates(nb_com, N, sigma1, 
-                                                        place='equator',
-                                                        output_centers=True)
-    coordinatesS1 = (coordinatesS1.T[0]).reshape((N, 1))
-    centersS1 = (centers.T[0]).reshape((nb_com, 1))
-
-else:
-    coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
-    sigma1 = sigma2
-    centersS1 = (project_coordinates_on_circle_with_R(centersS2, R, nb_com).T[0]).reshape((nb_com, 1))
-
-coordinates = [coordinatesS1, coordinatesS2]
-centers = [centersS1, centersS2]
-sizes = get_equal_communities_sizes(nb_com, N)
-
-
-#graph stuff
-mu = 0.01
-average_k = 10.
-target_degrees = get_target_degree_sequence(average_k, 
-                                            N, 
-                                            rng, 
-                                            args.degree_distribution,
-                                            sorted=False) 
-
-#optimization stuff
-opt_params = {'tol':1e-1, 
-            'max_iterations': 1000, 
-            'perturbation': 0.1,
-            'verbose':True}
-
-
-S1, S2 = ModelSD(), ModelSD()
-models = [S1, S2]
-for D in [1,2]:
-    global_params = get_global_params_dict(N, D, beta_r*D, mu)
-    local_params = {'coordinates':coordinates[D-1], 
-                    'kappas': target_degrees+1e-3, 
-                    'target_degrees':target_degrees, 
-                    'nodes':np.arange(N)}
-
-    SD = models[D-1]
-    SD.specify_parameters(global_params, local_params, opt_params)
-    SD.set_mu_to_default_value(average_k)
-    SD.reassign_parameters()
-
-    if args.optimize_kappas:
-        SD.optimize_kappas(rng)
-        SD.reassign_parameters()
-
-    labels = np.arange(nb_com)
-    SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
-
-    order = get_order_theta_within_communities(SD, nb_com)
-
-    SD.build_probability_matrix(order=order) 
-    #SD.communities = get_communities_array(N, sizes)
-    
-
+    return np.sort(out.flatten())[::-1]    
 
 def plot_matrices(S1, S2, m1, m2, summ1, summ2):
     #the sphere
@@ -241,16 +147,110 @@ def plot_disparities(B1, B2):
     plt.show()
 
 
-m1 = get_community_block_matrix(S1, nb_com)
-m2 = get_community_block_matrix(S2, nb_com)
+#parse input arguments
+parser = argparse.ArgumentParser()
+parser.add_argument('-nc', '--nb_communities', type=int, default=8,
+                        help='number of communities to put on the sphere')
+parser.add_argument('-dd', '--degree_distribution', type=str, default='exp',
+                        choices=['poisson', 'exp', 'pwl'],
+                        help='shape of the degree distribution')
+parser.add_argument('-fs', '--sigma', type=float,
+                        help='fraction of maximal sigma')
+parser.add_argument('-br', '--beta_ratio', type=float, default=3.5,
+                        help='value of beta for d=1')
+parser.add_argument('-p', '--placement', type=str, default='uniformly',
+                        choices = ['uniformly', 'randomly'],
+                        help='nodes placement in the spaces')
+parser.add_argument('-ok', '--optimize_kappas', type=bool, default=False)
+args = parser.parse_args() 
 
-summ1 = np.sum(m1*(1-np.eye(nb_com)))/2
-summ2 = np.sum(m2*(1-np.eye(nb_com)))/2
+if __name__=='__main__':
 
-m1 = normalize_block_matrix(m1, nb_com)
-m2 = normalize_block_matrix(m2, nb_com)
+    #setup
+    N = 1000
+    nb_com = args.nb_communities
+    frac_sigma_max = args.sigma
+    sigma1 = get_sigma_max(nb_com, 1)*frac_sigma_max
+    sigma2 = get_sigma_max(nb_com, 2)*frac_sigma_max
 
-plot_matrices(S1, S2, m1, m2, summ1, summ2)
+    beta_r = args.beta_ratio
+    rng = np.random.default_rng()
 
-plot_disparities(m1, m2)
+    #sample angular coordinates on sphere and circle
+    coordinatesS2, centersS2 = get_communities_coordinates(nb_com, N, 
+                                                        sigma2, 
+                                                        place=args.placement, 
+                                                        output_centers=True)
+    if args.placement=='uniformly':
+        coordinatesS1, centers = get_communities_coordinates(nb_com, N, sigma1, 
+                                                            place='equator',
+                                                            output_centers=True)
+        coordinatesS1 = (coordinatesS1.T[0]).reshape((N, 1))
+        centersS1 = (centers.T[0]).reshape((nb_com, 1))
+
+    else:
+        coordinatesS1, R = project_coordinates_on_circle(coordinatesS2, N, rng, verbose=True)
+        sigma1 = sigma2
+        centersS1 = (project_coordinates_on_circle_with_R(centersS2, R, nb_com).T[0]).reshape((nb_com, 1))
+
+    coordinates = [coordinatesS1, coordinatesS2]
+    centers = [centersS1, centersS2]
+    sizes = get_equal_communities_sizes(nb_com, N)
+
+
+    #graph stuff
+    mu = 0.01
+    average_k = 10.
+    target_degrees = get_target_degree_sequence(average_k, 
+                                                N, 
+                                                rng, 
+                                                args.degree_distribution,
+                                                sorted=False) 
+
+    #optimization stuff
+    opt_params = {'tol':1e-1, 
+                'max_iterations': 1000, 
+                'perturbation': 0.1,
+                'verbose':True}
+
+
+    S1, S2 = ModelSD(), ModelSD()
+    models = [S1, S2]
+    for D in [1,2]:
+        global_params = get_global_params_dict(N, D, beta_r*D, mu)
+        local_params = {'coordinates':coordinates[D-1], 
+                        'kappas': target_degrees+1e-3, 
+                        'target_degrees':target_degrees, 
+                        'nodes':np.arange(N)}
+
+        SD = models[D-1]
+        SD.specify_parameters(global_params, local_params, opt_params)
+        SD.set_mu_to_default_value(average_k)
+        SD.reassign_parameters()
+
+        if args.optimize_kappas:
+            SD.optimize_kappas(rng)
+            SD.reassign_parameters()
+
+        labels = np.arange(nb_com)
+        SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
+
+        order = get_order_theta_within_communities(SD, nb_com)
+
+        SD.build_probability_matrix(order=order) 
+        #SD.communities = get_communities_array(N, sizes)
+
+
+    m1 = get_community_block_matrix(S1, nb_com)
+    m2 = get_community_block_matrix(S2, nb_com)
+
+    summ1 = np.sum(m1*(1-np.eye(nb_com)))/2
+    summ2 = np.sum(m2*(1-np.eye(nb_com)))/2
+
+    m1 = normalize_block_matrix(m1, nb_com)
+    m2 = normalize_block_matrix(m2, nb_com)
+
+    plot_matrices(S1, S2, m1, m2, summ1, summ2)
+
+    plot_disparities(m1, m2)
 
