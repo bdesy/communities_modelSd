@@ -176,5 +176,36 @@ def get_disparities(weights):
     Y = np.sum(num, axis=0)
     return Y/strengths**2
 
+#plotting functions
 
+def plot_coordinates_S2(S2, ax, n):
+    #the sphere
+    phi, theta = np.mgrid[0.0:np.pi:100j, 0.0:2.0*np.pi:100j]
+    x = np.sin(phi)*np.cos(theta)*0.95
+    y = np.sin(phi)*np.sin(theta)*0.95
+    z = np.cos(phi)*0.95
+    #points on the sphere
+    theta, phi = S2.coordinates.T[0], S2.coordinates.T[1]
+    xx = np.sin(phi)*np.cos(theta)
+    yy = np.sin(phi)*np.sin(theta)
+    zz = np.cos(phi)
+    #plot sphere
+    ax.plot_surface(
+        x, y, z,  rstride=1, cstride=1, color='white', alpha=0.7, linewidth=0, zorder=10)
+    for c in range(n):
+        color = plt.cm.tab10(c%10)
+        nodes = np.where(S2.communities==c)
+        ax.scatter(xx[nodes],yy[nodes],zz[nodes],color=color,s=9)
+    ax.set_xlim([-1.,1.])
+    ax.set_ylim([-1.,1.])
+    ax.set_zlim([-1.,1.])
+    ax.axis('off')
 
+def plot_coordinates_S1(S1, ax, n):
+    theta = np.mod(S1.coordinates.flatten(), 2*np.pi)
+    for c in range(n):
+        color = plt.cm.tab10(c%10)
+        nodes = np.where(S1.communities==c)
+        ax.scatter(theta[nodes],np.ones(len(theta))[nodes],color=color,s=5, alpha=0.3)
+    ax.set_ylim(0,1.5)
+    ax.axis('off')

@@ -55,16 +55,38 @@ def sample_model(global_params, local_params, opt_params, average_k, rng, n):
     SD.optimize_kappas(rng)
     SD.reassign_parameters()
     return SD
- 
-def measure_stuff(SD, n, reassign, data):
+
+def represent(SD, reassign, n, frac_sigma):
+    fig = plt.figure(figsize=(6,4))
+    if SD.D==1:
+        ax = fig.add_subplot(121, projection='polar')
+        plot_coordinates_S1(SD, ax, n)
+    elif SD.D==2:
+        ax = fig.add_subplot(121, projection='3d')
+        plot_coordinates_S2(SD, ax, n)
+    ax = fig.add_subplot(122)
+    im = ax.imshow(np.log10(SD.probs+1e-5))
+    ax.set_title('D={}, reassign is {}, frac sigma {}'.format(SD.D, reassign, frac_sigma))
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    plt.show()
+
+def define_communities(SD, n, reassign):
     if reassign==False:
         sizes = get_equal_communities_sizes(n, SD.N)
         SD.communities = get_communities_array(SD.N, sizes)
     elif reassign:
         labels = np.arange(n)
-        misc, centers = get_communities_coordinates(n, SD.N, 0.01, place='uniformly', 
+        if SD.D==2:
+            misc, centers = get_communities_coordinates(n, SD.N, 0.01, place='uniformly', 
                                                     output_centers=True)
+        elif SD.D==1:
+            misc, centers = get_communities_coordinates(n, SD.N, 0.01, place='equator', 
+                                                    output_centers=True)
+            centers = (centers.T[0]).reshape((n, 1))
         SD.communities = get_communities_array_closest(SD.N, SD.D, SD.coordinates, centers, labels)
+
+
+def measure_stuff(SD, n, data):
     order = get_order_theta_within_communities(SD, n)
     SD.build_probability_matrix(order=order) 
     m, Y_u, r = do_measurements(SD, n)
@@ -92,7 +114,7 @@ def main():
 
     elif exp=='2':
         sample_size = 50
-        nc_list = [15]
+        nc_list = [5, 15, 25]
         dd_list = ['exp']
         beta_ratio_list = [3.5]
         frac_sigma_axis = np.linspace(0.05, 0.95, 20)
@@ -102,7 +124,7 @@ def main():
         nc_list=[15]
         dd_list = ['exp']
         beta_ratio_list = [3.5]
-        frac_sigma_axis = np.linspace(0.05, 0.95, 2)
+        frac_sigma_axis = np.array([0.3, 0.5, 0.7])
 
     tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(frac_sigma_axis)
 
@@ -129,12 +151,13 @@ def main():
                                 local_params = get_local_params(N, D, n, sigma, target_degrees)
                                 SD = sample_model(global_params, local_params, opt_params, 
                                                  average_k, rng, n)
-                                for reassign in [True, False]:
-                                    
+
+                                for reassign in [False, True]:
+                                    define_communities(SD, n, reassign)
                                     if reassign==False:
-                                        measure_stuff(SD, n, reassign, data_closest)
+                                        measure_stuff(SD, n, data)
                                     else:
-                                        measure_stuff(SD, n, reassign, data)
+                                        measure_stuff(SD, n, data_closest)
 
                                 pbar.update(1)
                             
