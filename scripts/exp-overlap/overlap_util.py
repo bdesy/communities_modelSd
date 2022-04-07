@@ -163,7 +163,7 @@ def project_coordinates_on_circle(coordinates, N, rng, verbose=False):
         print('Final RMS distance to equator is {}'.format(rmsd))
     return new_coordinates.T[0].reshape((N,1)), R
 
-# rank and disparity
+# stuf to be measured
 
 def get_stable_rank(B):
     u, s, vh = np.linalg.svd(B)
@@ -175,6 +175,12 @@ def get_disparities(weights):
     num = weights**2
     Y = np.sum(num, axis=0)
     return Y/strengths**2
+
+def get_entropy(B):
+    assert abs(np.sum(B)-2.)<1e-4, 'sum of probs is not 1'
+    logable_B = np.where(B>0, B, 1)
+    hadamard = np.triu(B, k=1)*np.triu(np.log(logable_B), k=1)
+    return -np.sum(hadamard)
 
 #plotting functions
 
@@ -196,9 +202,10 @@ def plot_coordinates_S2(S2, ax, n):
         color = plt.cm.tab10(c%10)
         nodes = np.where(S2.communities==c)
         ax.scatter(xx[nodes],yy[nodes],zz[nodes],color=color,s=9)
-    ax.set_xlim([-1.,1.])
-    ax.set_ylim([-1.,1.])
-    ax.set_zlim([-1.,1.])
+    l=0.85
+    ax.set_xlim([-l,l])
+    ax.set_ylim([-l,l])
+    ax.set_zlim([-l,l])
     ax.axis('off')
 
 def plot_coordinates_S1(S1, ax, n):
