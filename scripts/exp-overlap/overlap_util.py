@@ -22,6 +22,32 @@ from scipy.stats import norm
 
 from time import time
 
+def get_dict_key(D, dd, nc, beta, f):
+    return 'S{}-'.format(D)+dd+'-{}coms-{}beta-{:.2f}sigmam'.format(nc, beta, f)
+
+def retrieve_data(data_dict, D, dd, nc, beta, frac_sigma_axis, qty, closest=False):
+    y, err = [], []
+    for f in frac_sigma_axis:
+        key = get_dict_key(D, dd, nc, beta, f)+'-'+qty
+        if closest:
+            key+='-closest'
+        data = np.array(data_dict[key])  
+        if qty == 'r':
+            y.append(np.mean(data/nc))
+            err.append(np.std(data/nc))
+        elif qty == 'm':
+            y.append(np.mean(data))
+            err.append(np.std(data))
+        elif qty=='Y':
+            y.append(data)
+        elif qty=='S':
+            y.append(np.mean(data))
+            err.append(np.std(data))
+        elif qty=='degrees':
+            y.append(data)
+    return np.array(y), np.array(err)
+
+
 def normalize_block_matrix(block_mat, n):
     norm =  np.sum(block_mat)/2
     return block_mat/norm
@@ -64,6 +90,39 @@ def get_coordinates(N, D, nc, sigma, output_centers=False):
             coordinates, centers = get_communities_coordinates(nc, N, sigma, 
                                 place='uniformly', output_centers=output_centers)
         return coordinates, centers
+
+def get_local_params(N, D, nc, sigma, target_degrees): 
+    coordinates = get_coordinates(N, D, nc, sigma)
+    local_params = {'coordinates':coordinates, 
+                                'kappas': target_degrees+1e-3, 
+                                'target_degrees':target_degrees, 
+                                'nodes':np.arange(N)}
+    return local_params
+
+def sample_model(global_params, local_params, opt_params, average_k, rng, optimize_kappas=True):
+    SD = ModelSD()
+    SD.specify_parameters(global_params, local_params, opt_params)
+    SD.set_mu_to_default_value(average_k)
+    SD.reassign_parameters()
+    if optimize_kappas:
+        SD.optimize_kappas(rng)
+    SD.reassign_parameters()
+    return SD
+
+def define_communities(SD, n, reassign):
+    if reassign==False:
+        sizes = get_equal_communities_sizes(n, SD.N)
+        SD.communities = get_communities_array(SD.N, sizes)
+    elif reassign:
+        labels = np.arange(n)
+        if SD.D==2:
+            misc, centers = get_communities_coordinates(n, SD.N, 0.01, place='uniformly', 
+                                                    output_centers=True)
+        elif SD.D==1:
+            misc, centers = get_communities_coordinates(n, SD.N, 0.01, place='equator', 
+                                                    output_centers=True)
+            centers = (centers.T[0]).reshape((n, 1))
+        SD.communities = get_communities_array_closest(SD.N, SD.D, SD.coordinates, centers, labels)
 
 
 def get_order_theta_within_communities(SD, n):
@@ -216,3 +275,7 @@ def plot_coordinates_S1(S1, ax, n):
         ax.scatter(theta[nodes],np.ones(len(theta))[nodes],color=color,s=5, alpha=0.3)
     ax.set_ylim(0,1.5)
     ax.axis('off')
+
+def plot_block_matrix(SD, ax, mi, ma):
+    im = ax.imshow(np.log10(SD.block_matrix+1e-5), cmap='Greys', vmin=mi, vmax=ma)
+    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)

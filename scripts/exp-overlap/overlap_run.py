@@ -28,17 +28,6 @@ args = parser.parse_args()
 exp = args.experiment
 
 
-def get_dict_key(D, dd, nc, beta, f):
-    return 'S{}-'.format(D)+dd+'-{}coms-{}beta-{:.2f}sigmam'.format(nc, beta, f)
-
-def get_local_params(N, D, nc, sigma, target_degrees): 
-    coordinates = get_coordinates(N, D, nc, sigma)
-    local_params = {'coordinates':coordinates, 
-                                'kappas': target_degrees+1e-3, 
-                                'target_degrees':target_degrees, 
-                                'nodes':np.arange(N)}
-    return local_params
-
 def do_measurements(SD, n):
     block_mat = get_community_block_matrix(SD, n)
     m = np.sum(block_mat)/2
@@ -46,15 +35,6 @@ def do_measurements(SD, n):
     Y_u = list(get_disparities(block_mat))
     r = get_stable_rank(block_mat)
     return m, Y_u, r
-
-def sample_model(global_params, local_params, opt_params, average_k, rng, n):
-    SD = ModelSD()
-    SD.specify_parameters(global_params, local_params, opt_params)
-    SD.set_mu_to_default_value(average_k)
-    SD.reassign_parameters()
-    SD.optimize_kappas(rng)
-    SD.reassign_parameters()
-    return SD
 
 def represent(SD, reassign, n, frac_sigma):
     fig = plt.figure(figsize=(6,4))
@@ -69,21 +49,6 @@ def represent(SD, reassign, n, frac_sigma):
     ax.set_title('D={}, reassign is {}, frac sigma {}'.format(SD.D, reassign, frac_sigma))
     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     plt.show()
-
-def define_communities(SD, n, reassign):
-    if reassign==False:
-        sizes = get_equal_communities_sizes(n, SD.N)
-        SD.communities = get_communities_array(SD.N, sizes)
-    elif reassign:
-        labels = np.arange(n)
-        if SD.D==2:
-            misc, centers = get_communities_coordinates(n, SD.N, 0.01, place='uniformly', 
-                                                    output_centers=True)
-        elif SD.D==1:
-            misc, centers = get_communities_coordinates(n, SD.N, 0.01, place='equator', 
-                                                    output_centers=True)
-            centers = (centers.T[0]).reshape((n, 1))
-        SD.communities = get_communities_array_closest(SD.N, SD.D, SD.coordinates, centers, labels)
 
 
 def measure_stuff(SD, n, data):
@@ -149,9 +114,7 @@ def main():
 
                             for i in range(sample_size):
                                 local_params = get_local_params(N, D, n, sigma, target_degrees)
-                                SD = sample_model(global_params, local_params, opt_params, 
-                                                 average_k, rng, n)
-
+                                SD = sample_model(global_params, local_params, opt_params, average_k, rng)
                                 for reassign in [False, True]:
                                     define_communities(SD, n, reassign)
                                     if reassign==False:
