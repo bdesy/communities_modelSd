@@ -17,6 +17,7 @@ import sys
 sys.path.insert(0, '../../src/')
 from geometric_functions import *
 from overlap_util import * 
+from scipy.optimize import fsolve
 
 def get_max_sigma1_unif(n):
     sigma = np.sqrt(2*np.pi)/n
@@ -36,6 +37,7 @@ def plot_circle(ax, coordinates, labels, nb_com, N):
     ax.set_xticks([])
     ax.set_yticks([])
     ax.axis('off')
+    ax.set_ylim(0, 1.1)
 
 def plot_sphere(ax, coordinates, labels, nb_com, N):
     #the sphere
@@ -61,11 +63,46 @@ def plot_sphere(ax, coordinates, labels, nb_com, N):
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_zticks([])
+    ax.axis('off')
+
+def sum_vmf(x, n):
+    s = np.exp(1./x**2)
+    if int(n)%2==0:
+        for i in range(1, int(n/2)):
+            s += 2*np.exp(np.cos( 2*np.pi*i / n ) / x**2)
+        s += np.exp(-1./x**2)
+    else:
+        for i in range(1, int((n+1)/2)):
+            s += 2*np.exp(np.cos( 2*np.pi*i / n ) / x**2)
+    return s
+
+def vmf_zero(x, n):
+    return sum_vmf(x, n) / (n*np.i0(1./x**2)) - 1
+
+def get_max_sigma_vmf_1D(n):
+    res = fsolve(vmf_zero, get_max_sigma1_unif(n), args=(n))
+    print(res[0]- get_max_sigma1_unif(n))
+    return res[0]
+'''
+print(get_max_sigma_vmf_1D(16), get_max_sigma1_unif(16))
+
+colors=['k', 'cyan', 'coral', 'olivedrab', 'tomato']
+#i=0
+for n in range(3, 100):
+    plt.plot(n, get_max_sigma_vmf_1D(n), 'o', c='cyan', ms=7)
+#    #plt.axhline(np.cos(np.pi/n), label='n={}'.format(n), c=colors[i])
+    plt.plot(n, get_max_sigma1_unif(n), 'o', c='k', ms=3)
+
+#sss = np.linspace(0.0001, np.pi, 1000)
+#plt.plot(sss, sss**2*np.log(np.i0(1./sss**2)))
+#plt.legend()
+plt.show()
+'''
 
 def main():
     N = 1000
     nb_com = [5, 10, 15]
-    frac_sigma_max = [0.1, 0.5, 1.]
+    frac_sigma_max = [0.05, 0.5, 0.7]
 
     #plot for S^1
     fig, ax = plt.subplots(3,3, figsize=(7,7),

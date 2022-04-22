@@ -133,10 +133,10 @@ def main():
 
     elif exp=='test':
         sample_size = 2
-        nc_list=[15]
+        nc_list=[17]
         dd_list = ['exp']
         beta_ratio_list = [3.5]
-        frac_sigma_axis = np.array([0.3, 0.5, 0.7])
+        frac_sigma_axis = np.array([0.05])
 
     tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(frac_sigma_axis)
 
@@ -170,7 +170,8 @@ def main():
                                 define_communities(SD, n, reassign=True)
                                 measure_stuff(SD, n, data)
                                 block_matrices.append(SD.block_mat.astype(float).tolist())
-                                #represent(SD, n, f, S)
+                                m, S, r, degrees = do_measurements(SD, n)
+                                represent(SD, n, f, S)
 
                                 pbar.update(1)
                             res[key+'-m'] = data[0]

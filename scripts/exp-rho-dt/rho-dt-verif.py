@@ -24,11 +24,11 @@ from util import *
 parser = argparse.ArgumentParser()
 parser.add_argument('-n', '--nb_nodes', type=int, default=1000,
                         help='number of nodes in the graph')
-parser.add_argument('-d', '--dimension', type=int,
+parser.add_argument('-d', '--dimension', type=int, default=1,
                         help='dimension of sphere')
 parser.add_argument('-k', '--kappa', type=float, default=10.,
                         help='value of both latent degree')
-parser.add_argument('-br', '--beta_ratio', type=float,
+parser.add_argument('-br', '--beta_ratio', type=float, default=3.5,
                         help='value of beta for d=1')
 args = parser.parse_args()
 
@@ -62,13 +62,12 @@ Dtheta = SD.angular_distance_matrix
 
 dist = []
 
-for i in tqdm(range(10000)):
+for i in tqdm(range(1000)):
 	A = SD.sample_random_matrix()
 	m = np.sum(np.triu(A))
 	connected_angular_distances = np.triu(A*Dtheta)
 	for ind in np.argwhere(connected_angular_distances>0.):
 		dist.append(connected_angular_distances[ind[0], ind[1]])
-print(dist)
 plt.hist(dist, bins=200, density=True, alpha=0.5, color='darkcyan')
 
 #from scipy.special import gamma

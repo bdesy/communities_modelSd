@@ -12,25 +12,30 @@ Date : 29/04/2021
 import argparse
 import matplotlib
 import numpy as np
-import networkx as nx
-from infomap import Infomap
 import matplotlib.pyplot as plt
+import networkx as nx
 from scipy.stats import gaussian_kde
-import community as community_louvain
+import sys
+sys.path.insert(0, '../../src/')
+from hyperbolic_random_graph import *
+from hrg_functions import *
+from geometric_functions import *
+sys.path.insert(0, '../exp-overlap/')
+from overlap_util import *
+
 
 # Define sub-recipes
 
 def compute_radius(kappa, kappa_0, R_hat):
     return R_hat - 2*np.log(kappa/kappa_0)
 
+def get_hyperbolic_edge(t1, t2, r1, r2):
+    return [t1, t2], [r1, r2]
+
 # Parse input parameters
 
 parser = argparse.ArgumentParser()
-
-parser.add_argument('--filepath', '-p', type=str,
-                    help='path to the graph xml file')
-parser.add_argument('--community', '-c', type=str, choices=['louvain', 'infomap', 'SBM'],
-                    help='community detection algorithm to use')
+parser.add_argument('-ok', '--optimize_kappas', type=bool, default=False)
 parser.add_argument('--mode', '-m', type=str, default='normal',
                     help='optional presentation mode for bigger stuff')
 parser.add_argument('--density', '-d', type=bool, default=False,
@@ -40,82 +45,80 @@ parser.add_argument('--save', '-s', type=bool, default=False,
 args = parser.parse_args()
 
 # Load graph data and parameters
+sampling=True
+if sampling:
+    N = 300
+    nb_com = 15
+    D=1
+    frac_sigma_max = 0.3
+    sigma1 = get_sigma_max(nb_com, 1)*frac_sigma_max
+    sigma2 = get_sigma_max(nb_com, 2)*frac_sigma_max
 
-G = nx.read_graphml(args.filepath)
-#G = nx.read_graphml('data/graph1000_poisson_gpa_S1_hidvar.xml')
+    beta_r = 3.5
+    rng = np.random.default_rng()
 
-path_to_hidvars = G.graph['hidden_variables_file']
-D = G.graph['dimension']
-mu = G.graph['mu']
-R = G.graph['radius']
-beta = G.graph['beta']
+    #sample angular coordinates on sphere and circle
+    coordinatesS2, centersS2 = get_communities_coordinates(nb_com, N, 
+                                                        sigma2, 
+                                                        place='uniformly', 
+                                                        output_centers=True)
+    coordinatesS1, centers = get_communities_coordinates(nb_com, N, sigma1, 
+                                                            place='equator',
+                                                            output_centers=True)
+    coordinatesS1 = (coordinatesS1.T[0]).reshape((N, 1))
+    centersS1 = (centers.T[0]).reshape((nb_com, 1))
 
-hidvars = np.loadtxt(path_to_hidvars, dtype=str).T
+    coordinates = [coordinatesS1, coordinatesS2]
+    centers = [centersS1, centersS2]
 
-kappas_array = (hidvars[1]).astype('float')
-thetas_array = (hidvars[2]).astype('float')
-N = len(kappas_array)
+    #graph stuff
+    mu = 0.01
+    average_k = 10.
+    target_degrees = get_target_degree_sequence(average_k, 
+                                                N, 
+                                                rng, 
+                                                'exp',
+                                                sorted=False) 
+
+    #optimization stuff
+    opt_params = {'tol':1e-1, 
+                'max_iterations': 1000, 
+                'perturbation': 0.1,
+                'verbose':True}
+
+
+    SD = ModelSD()
+    global_params = get_global_params_dict(N, D, beta_r*D, mu)
+    local_params = {'coordinates':coordinates[D-1], 
+                        'kappas': target_degrees+1e-3, 
+                        'target_degrees':target_degrees, 
+                        'nodes':np.arange(N)}
+    SD.specify_parameters(global_params, local_params, opt_params)
+    SD.set_mu_to_default_value(average_k)
+    SD.reassign_parameters()
+
+    if args.optimize_kappas:
+        SD.optimize_kappas(rng)
+        SD.reassign_parameters()
+
+    labels = np.arange(nb_com)
+    SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
+
+    SD.build_probability_matrix() 
+
+A = SD.sample_random_matrix()
+G = nx.from_numpy_matrix(A)
 
 # Compute radii 
 
-kappa_0 = np.min(kappas_array)
+kappa_0 = np.min(SD.kappas)
 R_hat = 2*np.log(N / (mu*np.pi*kappa_0**2))
 
-radiuses_array = compute_radius(kappas_array, kappa_0, R_hat)
-
-# Set dictionnaries for stuff
-
-kappas = {}
-thetas = {}
-radiuses = {}
-
-for node in G.nodes():
-    kappa = G.nodes(data=True)[node]['kappa']
-    
-    thetas[node] = G.nodes(data=True)[node]['angle0']
-    kappas[node] = kappa
-    radiuses[node] = compute_radius(kappa, kappa_0, R_hat)
-
-# Compute desired partition
-if args.community=='louvain':
-    partition = community_louvain.best_partition(G)
-elif args.community=='infomap':
-    im = Infomap()
-    for node in G.nodes():
-        im.add_node(int(node[1:]))
-    for edge in G.edges():
-        n1, n2 = edge
-        im.add_link(int(n1[1:]), int(n2[1:]))
-    im.run("-N10")
-    partition_im = im.get_modules(depth_level=1)
-    partition = {}
-    for node_int in partition_im:
-        node = 'n{}'.format(node_int)
-        partition[node] = partition_im[node_int]
-elif args.community=='SBM':
-    import graph_tool.all as gt
-    g = gt.load_graph(args.filepath)
-    state = gt.minimize_blockmodel_dl(g)
-    partition_sbm = state.get_blocks()
-    partition = {}
-    for i in range(N):
-        node = 'n{}'.format(i)
-        partition[node] = partition_sbm[i]
+radiuses = compute_radius(SD.kappas, kappa_0, R_hat)
 
 
-
-# Create color dictionnary
-print(len(set(partition.values())))
-color_list=['teal', 'coral', 'limegreen', 'crimson', 'midnightblue', 'turquoise', 'plum', 'darkorchid', 'indigo', 'darkslategrey', 
-            'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown', 'teal', 'coral', 'limegreen', 'crimson', 'midnightblue',
-             'turquoise', 'plum', 'darkorchid', 'indigo', 'darkslategrey', 
-            'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown',
-             'turquoise', 'plum', 'darkorchid', 'indigo', 'darkslategrey', 
-            'dimgray', 'darkgreen',  'peru', 'greenyellow', 'saddlebrown',]
-
-colors = {}
-for comm in set(partition.values()):
-    colors[comm] = color_list[comm]
+kappas = SD.kappas
+thetas = SD.coordinates    
 
 # Set plotting sizes
 if args.mode=='normal':
@@ -129,53 +132,58 @@ elif args.mode=='presentation':
 
 # Plot figure
 
-fig = plt.figure(figsize=(6,6))
+fig = plt.figure(figsize=(3.375,3))
 rect = [0.1, 0.1, 0.8, 0.8]
 ax = fig.add_axes(rect, projection='polar')
 
 for edge in G.edges():
     n1, n2 = edge
-    theta, r = [thetas[n1], thetas[n2]], [radiuses[n1], radiuses[n2]]
+    theta, r = get_hyperbolic_edge(thetas[n1], thetas[n2], radiuses[n1], radiuses[n2])
     ax.plot(theta, r, c='k', linewidth=0.5, alpha=0.4)
 
 for node in G.nodes():
-    community = partition[node]
-    color = colors[community]
+    community = SD.communities[node]
+    color = plt.cm.tab10(community%10)
     ax.plot(thetas[node], radiuses[node], 'o', ms=ms[0], c='white')
     ax.plot(thetas[node], radiuses[node], 'o', ms=ms[1], c=color)
 
-ax.set_xticks([0, np.pi/2, np.pi, 3*np.pi/2])
-ax.set_xticklabels(['0', r'$\pi/2$', r'$\pi$', r'$3\pi/2$'])
+ax.set_xticks([])
 ax.set_yticks([])
 ax.spines['polar'].set_visible(False)
 
 if args.density:
-    tt = np.linspace(0.001,2*np.pi, 1000)
-    kde = gaussian_kde(thetas_array, bw_method=0.02)
+    tt = np.linspace(0.0,2*np.pi, 1000)
+    kde = gaussian_kde(thetas.T[0], bw_method=0.02)
     upper = kde(tt)
+    '''
     upper /= np.max(upper)
     upper *= (R_hat*1.1 - R_hat)
     upper += R_hat
     lower = np.ones(1000)*R_hat
-    ax.fill_between(tt, lower, upper, alpha=0.3, color='darkcyan')
-    ax.plot(tt, upper, c='darkcyan', linewidth=1)
+    #ax.fill_between(tt, lower, upper, alpha=0.3, color='darkcyan')
+    #ax.plot(tt, upper, c='darkcyan', linewidth=1)
 
     xx = np.linspace(0.01, R_hat, 1000)
-    kde_r = gaussian_kde(radiuses_array, bw_method=0.07)
+    kde_r = gaussian_kde(radiuses, bw_method=0.07)
     yy = np.array(kde_r(xx))
     yy = yy/np.max(yy)*R_hat/3
 
     r_den = np.sqrt(xx**2 + yy**2)
-    th_den = np.arccos(xx / r_den)
-    print(len(th_den), th_den.shape)
-    print(type(r_den), type(xx), type(yy))
+    th_den = np.arccos(xx / r_den)'''
+
     
-    #ax.plot(th_den, r_den, '-', c='darkcyan', ms=0.5)
-    #ax.fill_between(th_den, 0, r_den, alpha=0.3, color='darkcyan')
-    plt.ylim(0.01, R_hat*1.2)
+    used_theta=np.linspace(0, 2*np.pi, 1000)
+    used_rad = np.linspace(R_hat*1.05, R_hat*1.15, 1000)
+    X,Y = np.meshgrid(used_theta, used_rad) #rectangular plot of polar data
+    truc = upper.reshape((1,1000))
+    density = np.repeat(truc, repeats=1000, axis=0)
+    #print(density.shape)
+    ax.pcolormesh(X, Y, density, cmap='Purples')
+
 if args.save:
     plt.savefig('fig1_'+args.community, dpi=600)
 
+plt.ylim(0.01, R_hat*1.2)
 plt.show()
 
 
