@@ -106,7 +106,7 @@ nc = np.arange(100)+1
 
 xmin, xmax = 1., 37.5
 ymin, ymax = 0., 37.
-fig, ax = plt.subplots(figsize=(5,4))
+fig, ax = plt.subplots(figsize=(5,4)) #(3.375, 3) À FAIRE
 plt.rcParams.update({
     "text.usetex": True,})
 plt.plot(nc, nc-1, ':', c='k', linewidth=2)

@@ -57,6 +57,6 @@ for D in [1,2]:
     plt.xticks([])
     plt.yticks([])
     plt.tight_layout()
-    plt.savefig('mat{}'.format(D), dpi=600)
     plt.axis('off')
+    plt.savefig('mat{}'.format(D), dpi=600)
     plt.show()

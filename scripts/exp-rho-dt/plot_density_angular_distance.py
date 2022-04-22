@@ -121,7 +121,8 @@ plt.ylabel(r'$g(\theta\ |\ \eta)$')
 
 handles, labels = plt.gca().get_legend_handles_labels()
 order = [4,3,2,1,0]
-plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order], loc=(0.02, 0.553))
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order], 
+            loc=(0.02, 0.553), frameon=False)
 
 #plt.title(r'$\kappa={}$, $\kappa^,={}$, $\beta/d={}$'.format(kappa_i, kappa_j, ratio))
 plt.ylim(0,34.)
