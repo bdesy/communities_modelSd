@@ -37,7 +37,7 @@ kappa = args.kappa
 
 rng = np.random.default_rng()
 
-for D in [5]:
+for D in [5,4,3,2,1]:
     dist = []
     beta = args.beta_ratio*D
     if D<2.5:
