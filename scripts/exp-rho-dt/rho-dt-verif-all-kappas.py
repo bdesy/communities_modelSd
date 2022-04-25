@@ -69,7 +69,7 @@ for D in [5,4,3,2,1]:
         connected_angular_distances = np.triu(A*SD.angular_distance_matrix)
         for ind in np.argwhere(connected_angular_distances>0.):
             dist.append(connected_angular_distances[ind[0], ind[1]])
-    filename = 'data/all-kappa-verif/D{}-gamma{}-beta{}.txt'.format(D, args.gamma, args.beta_ratio)
+    filename = '../../../scratch/D{}-gamma{}-beta{}.txt'.format(D, args.gamma, args.beta_ratio)
     np.savetxt(filename, np.array(dist))
 '''    
 plt.hist(dist, bins=200, density=True, alpha=0.5, color='darkcyan')
