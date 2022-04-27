@@ -28,12 +28,17 @@ opt_params = {'tol':1e-1,
             'verbose':True}
 rng = np.random.default_rng()
 
+all_kappas=False
 
-target_degrees = get_target_degree_sequence(average_k, 
-                                            N, 
-                                            rng, 
-                                            'exp',
-                                            sorted=False) 
+if all_kappas:
+    target_degrees = get_target_degree_sequence(average_k, 
+                                                N, 
+                                                rng, 
+                                                'exp',
+                                                sorted=False) 
+else:
+    target_degrees = np.ones(N)*average_k
+
 cmaps = ['Purples', 'Blues']
 
 for D in [1,2]:
@@ -47,6 +52,7 @@ for D in [1,2]:
     SD.specify_parameters(global_params, local_params, opt_params)
     SD.set_mu_to_default_value(average_k)
     SD.reassign_parameters()
+    
     SD.optimize_kappas(rng)
     SD.reassign_parameters()
 
