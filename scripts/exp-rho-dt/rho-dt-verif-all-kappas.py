@@ -51,7 +51,7 @@ for D in [2,1]:
                     'beta':beta, 
                     'euclidean':euclidean}
     coordinates = sample_uniformly_on_hypersphere(N, D)
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(500)):
         kappas = get_target_degree_sequence(kappa, N, rng, 'pwl', sorted=False, y=args.gamma)
         local_parameters = {'coordinates':coordinates,
                         'kappas':kappas,
