@@ -52,23 +52,24 @@ for D in [2,1]:
                     'euclidean':euclidean}
     coordinates = sample_uniformly_on_hypersphere(N, D)
     for i in tqdm(range(500)):
-        kappas = get_target_degree_sequence(kappa, N, rng, 'pwl', sorted=False, y=args.gamma)
-        local_parameters = {'coordinates':coordinates,
-                        'kappas':kappas,
-                        'nodes':np.arange(N),
-                        'target_degrees':np.ones(N)*args.kappa}
-        SD = ModelSD()
-        SD.gp.specify(global_parameters)
-        SD.lp.specify(local_parameters)
-        SD.reassign_parameters()
-        SD.build_probability_matrix()
-        SD.build_angular_distance_matrix()
-        
-        A = SD.sample_random_matrix()
-        m = np.sum(np.triu(A))
-        connected_angular_distances = np.triu(A*SD.angular_distance_matrix)
-        for ind in np.argwhere(connected_angular_distances>0.):
-            dist.append(connected_angular_distances[ind[0], ind[1]])
+        if len(dist)<1e6:
+            kappas = get_target_degree_sequence(kappa, N, rng, 'pwl', sorted=False, y=args.gamma)
+            local_parameters = {'coordinates':coordinates,
+                            'kappas':kappas,
+                            'nodes':np.arange(N),
+                            'target_degrees':np.ones(N)*args.kappa}
+            SD = ModelSD()
+            SD.gp.specify(global_parameters)
+            SD.lp.specify(local_parameters)
+            SD.reassign_parameters()
+            SD.build_probability_matrix()
+            SD.build_angular_distance_matrix()
+            
+            A = SD.sample_random_matrix()
+            m = np.sum(np.triu(A))
+            connected_angular_distances = np.triu(A*SD.angular_distance_matrix)
+            for ind in np.argwhere(connected_angular_distances>0.):
+                dist.append(connected_angular_distances[ind[0], ind[1]])
     filename = '../../../scratch/D{}-gamma{}-beta{}.txt'.format(D, args.gamma, args.beta_ratio)
     np.savetxt(filename, np.array(dist))
 '''    
