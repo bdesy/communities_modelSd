@@ -138,6 +138,13 @@ def main():
         beta_ratio_list = [3.5]
         frac_sigma_axis = np.array([0.05])
 
+    if exp=='2':
+        sample_size = 100
+        nc_list = [5, 15, 25]
+        dd_list = ['exp']
+        beta_ratio_list = [3.5]
+        frac_sigma_axis = np.linspace(0.05, 0.95, 30)
+
     tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(frac_sigma_axis)
 
     res = {}
@@ -181,8 +188,8 @@ def main():
                             block_matrices_dict[key] = block_matrices
                             print(res)
     
-    #filepath = '../../../scratch/data/'+args.filename
-    filepath=args.filename
+    filepath = '../../../scratch/data/'+args.filename
+    #filepath=args.filename
     with open(filepath+'.json', 'w') as write_file:
         json.dump(res, write_file, indent=4)
     with open(filepath+'_blockmatrices.json', 'w') as write_file:
