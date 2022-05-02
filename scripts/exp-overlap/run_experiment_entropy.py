@@ -186,8 +186,6 @@ def main():
                             res[key+'-r'] = data[2]
                             res[key+'-degrees'] = data[3]
                             block_matrices_dict[key] = block_matrices
-                            print(res)
-    
     filepath = '../../../scratch/data/'+args.filename
     #filepath=args.filename
     with open(filepath+'.json', 'w') as write_file:
