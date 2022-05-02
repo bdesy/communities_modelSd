@@ -178,7 +178,7 @@ def main():
                                 measure_stuff(SD, n, data)
                                 block_matrices.append(SD.block_mat.astype(float).tolist())
                                 m, S, r, degrees = do_measurements(SD, n)
-                                represent(SD, n, f, S)
+                                #represent(SD, n, f, S)
 
                                 pbar.update(1)
                             res[key+'-m'] = data[0]
