@@ -131,7 +131,8 @@ def sample_gaussian_clusters_on_sphere(centers, sigmas, sizes):
         y_o = np.sin(theta)*np.sin(phi)
         z_o = np.cos(phi)
         for j in range(n_i):
-            s_theta, s_phi = sample_gaussian_points_on_sphere(x_o, y_o, z_o, sigmas[i])
+            sigma_xyz = 2.*np.sin(sigmas[i]/2.)
+            s_theta, s_phi = sample_gaussian_points_on_sphere(x_o, y_o, z_o, sigma_xyz)
             thetas.append(s_theta)
             phis.append(s_phi)
     return np.array(thetas), np.array(phis)
