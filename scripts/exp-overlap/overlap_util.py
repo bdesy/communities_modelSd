@@ -238,7 +238,7 @@ def get_disparities(weights):
 def get_entropy(B):
     assert abs(np.sum(B)-2.)<1e-4, 'sum of probs is not 1'
     logable_B = np.where(B>0, B, 1)
-    hadamard = np.triu(B, k=1)*np.triu(np.log(logable_B), k=1)
+    hadamard = np.triu(B, k=1)*np.triu(np.log2(logable_B), k=1)
     return -np.sum(hadamard)
 
 #plotting functions
