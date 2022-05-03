@@ -137,10 +137,10 @@ ax.spines['right'].set_visible(False)
 
 
 plt.tight_layout()
-plt.savefig('figure_neighbors_lines', dpi=600)
+#plt.savefig('figure_neighbors_lines', dpi=600)
 plt.show()
 
-schema = False
+schema = True
 if schema:
     thetas = np.linspace(0, 2*np.pi, 20, endpoint=False)
     circ = np.linspace(0, 2*np.pi, 1500)
@@ -152,10 +152,10 @@ if schema:
     plt.axis('off')
     plt.tight_layout()
     plt.ylim(0.,1.1)
-    plt.savefig('circle', transparent=True, dpi=600)
+    #plt.savefig('circle', transparent=True, dpi=600)
     plt.show()
 
-    coordinates = place_modes_coordinates_on_sphere(30, place='uniformly')
+    coordinates = place_modes_coordinates_on_sphere(20, place='uniformly')
 
     phi, theta = np.mgrid[0.0:np.pi:100j, 0.0:2.0*np.pi:100j]
     x = np.sin(phi)*np.cos(theta)
@@ -170,7 +170,9 @@ if schema:
     fig = plt.figure(figsize=(2,2))
     ax = fig.add_subplot(111, projection='3d')
     ax.plot_surface(
-        x, y, z,  rstride=1, cstride=1, color='white', alpha=1, linewidth=0, zorder=1)
+        x, y, z,  rstride=1, cstride=1, color='white', alpha=0.1, linewidth=0,zorder=0)
+    #ax.plot_surface(
+    #    x, y, z,  rstride=1, cstride=1, color='white', alpha=1, linewidth=0, zorder=1)
     nodes = np.where(theta>0)
     plt.plot(xx[nodes],yy[nodes],zz[nodes],'o', color='white',ms=9,zorder=8,alpha=0.5)
     plt.plot(xx[nodes],yy[nodes],zz[nodes],'o', color=cmap(1.1/3),ms=7,zorder=10)
@@ -180,5 +182,5 @@ if schema:
     ax.set_zlim(-l,l)
     plt.axis('off')
     plt.tight_layout()
-    plt.savefig('sphere', transparent=True, dpi=600)
+    #plt.savefig('sphere', transparent=True, dpi=600)
     plt.show()
