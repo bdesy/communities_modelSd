@@ -44,7 +44,7 @@ y = 2.5
 N = 1000
 k_0 = (y-2) * average_degree / (y-1)
 
-Dthetas = np.linspace(0.001, np.pi, 1000)
+Dthetas = np.linspace(0., np.pi, 10000)
 prob_Dthetas = np.zeros(Dthetas.shape)
 prob_Dthetas_infinite_beta = np.zeros(Dthetas.shape)
 
@@ -103,12 +103,13 @@ verif=False
 limit=False
 
 for D in range(Dmax, Dmin-1, -1):
+    beta = ratio * D
+    mu = compute_default_mu(D, beta, average_degree)
+    R = compute_radius(N, D)
+    eta_0 = (mu*k_0**2)**(1./D)/R
     if compute:
-        beta = ratio * D
-        mu = compute_default_mu(D, beta, average_degree)
-        R = compute_radius(N, D)
-        eta_0 = (mu*k_0**2)**(1./D)/R
         norm = compute_expectation_Z_eta(eta_0, beta, D, R, y, mu, k_0)
+        print(norm, 'marginalized connection prob')
         print(r'$D={}$'.format(D))
         prob_Dthetas_infinite_beta = np.sin(Dthetas)**(D-1)/norm
         for i in tqdm(range(len(Dthetas))):
@@ -135,9 +136,9 @@ for D in range(Dmax, Dmin-1, -1):
         prob_Dthetas = data[1]
         prob_Dthetas_infinite_beta = data[2]
     
-    plt.plot(Dthetas, prob_Dthetas, color='white', linewidth=5)
+    plt.plot(Dthetas, prob_Dthetas, color='white', linewidth=4)
     plt.plot(Dthetas, prob_Dthetas, color=colors[D-1], 
-            label=r'$D={}$'.format(D), linewidth=3)
+            label=r'$D={}$'.format(D), linewidth=2.5)
     print(np.sum(np.diff(Dthetas)*prob_Dthetas[:-1]), 'should be 1.')
 
     if verif:
@@ -158,18 +159,13 @@ order = [4,3,2,1,0]
 plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order], 
             loc=(0.09, 0.583), frameon=False) 
 
-plt.ylim(0., 22.)
+plt.ylim(0., 10.)
 plt.xlim(0., 0.9)
-log=True
-if log:
-    plt.ylim(0.1, 50.)
-    plt.yscale('log')
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 plt.tight_layout()
 plt.savefig('densities_all_kappas', dpi=600)
 plt.show()
-
 
 '''
 #verif pdf eta
@@ -178,18 +174,19 @@ for D in [5,4,3,2,1]:
     R = compute_radius(N, D)
     eta_0 = (mu*k_0**2)**(1./D)/R
     etas = []
-    for truc in range(100):
-        kappas = get_target_degree_sequence(average_degree, N, rng, 'pwl', sorted=False, y=2.5)
-        for i in range(N):
-            for j in range(i):
-                etas.append((mu*kappas[i]*kappas[j])**(1./D)/R)
+    for truc in range(10):
+        kappas = get_target_degree_sequence(average_degree, N, rng, 'pwl', sorted=False, y=y)
+        while len(etas)<1e5:
+            for i in range(N):
+                    for j in range(i):
+                        eta = (mu*kappas[i]*kappas[j])**(1./D)/R
+                        etas.append(eta)
     eta_axis = np.linspace(eta_0, 1., 1000)
     theo = pdf_eta_pareto(eta_axis, D, R, y, mu, k_0)
-    plt.hist(etas, bins=100, density=True, alpha=0.5, color=colors[D-1], range=(eta_0, 2.))
+    plt.hist(etas, bins=1000, density=True, alpha=0.5, color=colors[D-1], range=(0,1))
     plt.plot(eta_axis, theo, color=colors[D-1], label=D)
 plt.legend()
 plt.show()
+
 '''
-
-
 

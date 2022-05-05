@@ -90,9 +90,9 @@ for D in range(Dmax, Dmin-1, -1):
     
     c = colors[D-1]
 
-    plt.plot(Dthetas, pij*rho/denum, color='white', linewidth=5)
+    plt.plot(Dthetas, pij*rho/denum, color='white', linewidth=4)
     plt.plot(Dthetas, pij*rho/denum, label=r'$D = {}$'.format(D), 
-                color=c, linewidth=3)
+                color=c, linewidth=2.5)
 
     #approx_max = get_approx_max_location(eta, beta, D)
     #print(approx_max, get_exact_max_location(eta, beta, D))
@@ -117,17 +117,16 @@ for D in range(Dmax, Dmin-1, -1):
 
 #plt.xticks([0, np.pi/8, np.pi/4],['0', r'$\pi/8$', r'$\pi/4$'])
 plt.xlabel(r'$\theta$ (rad)')
-plt.ylabel(r'$g(\theta\ |\ \eta)$')
+plt.ylabel(r'$f_{X|Y,A}(\theta\ |\ \eta,1)$')
 
 handles, labels = plt.gca().get_legend_handles_labels()
 order = [4,3,2,1,0]
 plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order], 
-            loc=(0.02, 0.553), frameon=False)
+            loc=(0.09, 0.553), frameon=False)
 
 #plt.title(r'$\kappa={}$, $\kappa^,={}$, $\beta/d={}$'.format(kappa_i, kappa_j, ratio))
-plt.ylim(0,34.)
-
-plt.xlim(0., 0.7)
+plt.ylim(0., 22.)
+plt.xlim(0., 0.9)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 plt.tight_layout()
