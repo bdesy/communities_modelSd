@@ -14,7 +14,6 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib
 
-from overlap_run import get_sigma_max
 from overlap_util import *
 
 matplotlib.rc('text', usetex=True)
@@ -108,8 +107,8 @@ for c in range(len(nc_list)):
         sigma_max = get_sigma_max(nc, D)
         beta = br*D
         y, err = retrieve_data(data_dict, D, dd, nc, beta, frac_sigma_axis, qty, False)
-        y_mean = np.mean(y, axis=(1,2))
-        err = np.std(y, axis=(1,2))
+        y_mean = np.mean(np.mean(y, axis=2), axis=1)
+        err = np.std(np.mean(y, axis=2), axis=1)
         if nc==25:
             lab = r'$D = {}$'.format(D)
         else:
