@@ -51,15 +51,6 @@ def do_measurements(SD, n):
     S = get_entropy(block_mat)
     return m, S, r, degrees
 
-def sample_model(global_params, local_params, opt_params, average_k, rng, n):
-    SD = ModelSD()
-    SD.specify_parameters(global_params, local_params, opt_params)
-    SD.set_mu_to_default_value(average_k)
-    SD.reassign_parameters()
-    SD.optimize_kappas(rng)
-    SD.reassign_parameters()
-    return SD
-
 def represent(SD, n, frac_sigma, entropy):
     fig = plt.figure(figsize=(5,5))
     if SD.D==1:
