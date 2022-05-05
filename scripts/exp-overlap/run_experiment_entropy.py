@@ -145,6 +145,13 @@ def main():
         beta_ratio_list = [3.5]
         frac_sigma_axis = np.linspace(0.05, 0.95, 30)
 
+    if exp=='pwl':
+        sample_size = 25
+        nc_list = [5, 15, 25]
+        dd_list = ['pwl']
+        beta_ratio_list = [3.5]
+        frac_sigma_axis = np.linspace(0.05, 0.95, 30)
+
     tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(frac_sigma_axis)
 
     res = {}
