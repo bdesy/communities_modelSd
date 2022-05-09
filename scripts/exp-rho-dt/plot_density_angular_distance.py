@@ -22,7 +22,7 @@ sys.path.insert(0, '../../src/')
 from hyperbolic_random_graph import *
 from hrg_functions import *
 
-from math import factorial, gamma
+from math import factorial
 from scipy.special import hyp2f1
 
 from util import *
@@ -32,7 +32,7 @@ matplotlib.rc('text', usetex=True)
 matplotlib.rc('font', size=10)
 
 cmap = matplotlib.cm.get_cmap('viridis')
-colors =[cmap(1./20), cmap(1.1/3), cmap(2./3), cmap(9./10), cmap(1.0)]
+colors =[cmap(1./20), cmap(1.1/3), cmap(2./3), cmap(9./10), cmap(1.0), 'coral']
 
 limit=True
 
@@ -130,8 +130,35 @@ plt.xlim(0., 0.9)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 plt.tight_layout()
-plt.savefig('figure_densities_article', dpi=600)
+#plt.savefig('figure_densities_article', dpi=600)
 plt.show()
 
+def puissance_sin(dt, D):
+    return np.sin(dt)**(D-1)
 
+fig = plt.figure(figsize=(3.375, 2.5))
+ax = fig.add_subplot(111)
+for D in [6,5,4,3,2,1]:
+    c = colors[D-1]
+    if D==6:
+        D=50
+    norm, err = quad(puissance_sin, 0, np.pi, args=(D))#gamma((D+1)/2.)/(np.sqrt(np.pi)*gamma(D/2.))
+    plt.plot(Dthetas, np.sin(Dthetas)**(D-1)/norm, color='white', linewidth=4)
+    plt.plot(Dthetas, np.sin(Dthetas)**(D-1)/norm, label=r'$D = {}$'.format(D), 
+                color=c, linewidth=2.5)
+plt.xlabel(r'$\theta$ (rad)')
+plt.ylabel(r'$f_{X}(\theta)$')
+plt.xticks([0, np.pi/2, np.pi],['0', r'$\pi/2$', r'$\pi$'])
+handles, labels = plt.gca().get_legend_handles_labels()
+order = [5,4,3,2,1,0]
+plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order], 
+            loc=(0.02, 0.35), frameon=False)
 
+#plt.title(r'$\kappa={}$, $\kappa^,={}$, $\beta/d={}$'.format(kappa_i, kappa_j, ratio))
+plt.ylim(0., 2.9)
+plt.xlim(0., np.pi)
+ax.spines['top'].set_visible(False)
+ax.spines['right'].set_visible(False)
+plt.tight_layout()
+plt.savefig('f_X_theta', dpi=600)
+plt.show()
