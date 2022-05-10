@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from scipy.integrate import quad
 
 matplotlib.rc('text', usetex=True)
-matplotlib.rc('font', size=12)
+matplotlib.rc('font', size=10)
 
 #import sys
 #sys.path.insert(0, '../../src/')
@@ -100,14 +100,12 @@ if compute:
             for f in frac_sigma_axis:
                 key = get_dict_key(D, dd, nc, beta, f)
                 dist_gthreshold = measure_community_degrees_gthreshold(matrices_dict[key], t)
-                #dist_proportional = measure_community_degrees_proportional(matrices_dict[key])
                 #print(key)
-                dist_backbone = measure_community_degrees_backbone(matrices_dict[key], 0.3, show=False)
+                dist_backbone = measure_community_degrees_backbone(matrices_dict[key], 0.2, show=False)
                 key+='-degrees'
                 dist_first = initial_data_dict[key]
                 res[key+'-first'] = dist_first
                 res[key+'-gthreshold'+str(int(t))] = dist_gthreshold
-                #res[key+'-proportional'] = dist_proportional
                 res[key+'-backbone'] = dist_backbone
     
     #with open('data/community_degrees_various_binarizations.json', 'w') as write_file:
@@ -122,11 +120,14 @@ colors = [cmap(0.), cmap(2.2/5)]
 formats = [':', '--', '-']
 bidon = np.linspace(100, 110, 1000)
 
-for bins in ['first', 'gthreshold'+str(int(t)), 'backbone']:
-    plt.figure(figsize=(5.5, 5))
+sb = [121, 122]
+fig, axes = plt.subplots(1, 2, figsize=(3.375, 3), sharey=True)
+i=0
+for bins in ['gthreshold'+str(int(t)), 'backbone']:
+    ax = axes[i]
     for c in range(len(nc_list)):
         nc = nc_list[c]
-        plt.plot(bidon, np.ones(bidon.shape), 
+        ax.plot(bidon, np.ones(bidon.shape), 
                     formats[c], c='k', alpha=0.5,
                     label=r'$n = {}$'.format(nc))
         for D in [1,2]:
@@ -138,15 +139,16 @@ for bins in ['first', 'gthreshold'+str(int(t)), 'backbone']:
             else:
                 lab=None
 
-            plt.plot(frac_sigma_axis, y, linestyle=formats[c], color=colors[D-1], 
+            ax.plot(frac_sigma_axis, y, linestyle=formats[c], color=colors[D-1], 
                 label=lab)
-            plt.fill_between(frac_sigma_axis, y-err, y+err, 
+            ax.fill_between(frac_sigma_axis, y-err, y+err, 
                         alpha=0.3, color=colors[D-1], linewidth=0.0)
-    plt.title(bins)
-    plt.ylabel(r'$<k>$')
-    plt.xlabel(r'$\sigma$')
-    plt.xlim(0.05,0.95)
-    #plt.ylim(0, 25)
-    plt.legend(ncol=2)
-    plt.tight_layout()
-    plt.show()
+            ax.set_xlabel(r'$\sigma$')
+            ax.set_xlim(0.05, 0.95)
+    i+=1
+
+axes[0].set_ylabel(r'$<k>$')
+axes[1].legend(loc=(0.053, 0.532))
+plt.tight_layout()
+plt.savefig('binarization.png', dpi=600)
+plt.show()
