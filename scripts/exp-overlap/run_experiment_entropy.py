@@ -142,6 +142,7 @@ def main():
         dd_list = ['pwl']
         beta_ratio_list = [3.5]
         frac_sigma_axis = np.linspace(0.05, 0.95, 30)
+        average_k = 4.
 
     tot = 2*sample_size*len(nc_list)*len(dd_list)*len(beta_ratio_list)*len(frac_sigma_axis)
 
