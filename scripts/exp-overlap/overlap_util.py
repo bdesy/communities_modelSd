@@ -48,8 +48,11 @@ def retrieve_data(data_dict, D, dd, nc, beta, frac_sigma_axis, qty, closest=Fals
     return np.array(y), np.array(err)
 
 
-def normalize_block_matrix(block_mat, n):
+def normalize_block_matrix(block_mat, n, all_edges=False):
+    if all_edges==False:
+        block_mat *= (1-np.eye(n))
     norm =  np.sum(block_mat)/2
+    block_mat *= (1-np.eye(n))
     return block_mat/norm
 
 def get_community_block_matrix(SD, n):
@@ -62,7 +65,6 @@ def get_community_block_matrix(SD, n):
             block_mat[i,j] = get_block_sum(SD.probs, nodes_in_u, nodes_in_v)
     assert (np.sum(block_mat)-np.sum(SD.probs)<1e-5), 'sum of probs not equal'
     block_mat += np.triu(block_mat, k=1).T
-    block_mat *= (1-np.eye(n))
     return block_mat
 
 @njit
