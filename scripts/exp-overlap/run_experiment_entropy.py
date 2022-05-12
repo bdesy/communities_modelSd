@@ -47,8 +47,9 @@ def do_measurements(SD, n):
     degrees = list(np.sum(binary_block_mat, axis=0).astype(float))
     m = np.sum(block_mat)/2
     block_mat = normalize_block_matrix(block_mat, n)
-    r = get_stable_rank(block_mat)
     S = get_entropy(block_mat)
+    block_mat += np.eye(n)
+    r = get_stable_rank(block_mat)
     return m, S, r, degrees
 
 def represent(SD, n, frac_sigma, entropy):
