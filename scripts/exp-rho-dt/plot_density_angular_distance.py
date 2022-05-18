@@ -140,11 +140,13 @@ fig = plt.figure(figsize=(3.375, 2.5))
 ax = fig.add_subplot(111)
 for D in [6,5,4,3,2,1]:
     c = colors[D-1]
+    linestyle = '-'
     if D==6:
         D=50
+        linestyle = ':'
     norm, err = quad(puissance_sin, 0, np.pi, args=(D))#gamma((D+1)/2.)/(np.sqrt(np.pi)*gamma(D/2.))
     plt.plot(Dthetas, np.sin(Dthetas)**(D-1)/norm, color='white', linewidth=4)
-    plt.plot(Dthetas, np.sin(Dthetas)**(D-1)/norm, label=r'$D = {}$'.format(D), 
+    plt.plot(Dthetas, np.sin(Dthetas)**(D-1)/norm, label=r'$D = {}$'.format(D), linestyle=linestyle,
                 color=c, linewidth=2.5)
 plt.xlabel(r'$\theta$ (rad)')
 plt.ylabel(r'$f_{X}(\theta)$')
