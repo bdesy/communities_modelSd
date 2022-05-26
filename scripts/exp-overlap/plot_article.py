@@ -20,11 +20,11 @@ matplotlib.rc('text', usetex=True)
 matplotlib.rc('font', size=10)
 
 nc_list = [5, 15,25]
-dd = 'exp'
+dd = 'pwl'
 br = 3.5
-frac_sigma_axis = np.linspace(0.05, 0.95, 20)
+frac_sigma_axis = np.linspace(0.05, 0.95, 30)
 
-with open('data/experiment_entropy.json', 'r') as read_file:
+with open('data/experiment_entropy_pwl_deg4.json', 'r') as read_file:
     data_dict = json.load(read_file)
 
 cmap = matplotlib.cm.get_cmap('viridis')
@@ -53,15 +53,15 @@ for c in range(len(nc_list)):
                 label=lab)
         plt.fill_between(frac_sigma_axis, y-err, y+err, alpha=0.3, color=colors[D-1], linewidth=0.0)
 
-plt.ylabel(r'$S$')
+plt.ylabel(r'$S$ (bits)')
 plt.xlabel(r'$\sigma$')
 plt.xlim(0.05,0.95)
-plt.ylim(0.5, 5.2)
+#plt.ylim(0.5, 5.2)
 #plt.legend(ncol=2, loc=4)
 plt.tight_layout()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.savefig('figures/article-'+qty+'.png', dpi=600)
+plt.savefig('figures/article-pwl-'+qty+'.png', dpi=600)
 plt.show()
 
 qty='r'
@@ -92,7 +92,7 @@ plt.tight_layout()
 plt.legend(ncol=2, frameon=False, loc=(0.05, 0.75),columnspacing=1.)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.savefig('figures/article-'+qty+'.png', dpi=600)
+plt.savefig('figures/article-pwl-'+qty+'.png', dpi=600)
 plt.show()
 
 qty='degrees'
@@ -128,5 +128,5 @@ plt.legend(ncol=2, frameon=False, columnspacing=1.)
 plt.tight_layout()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.savefig('figures/article-'+qty+'.png')
+plt.savefig('figures/article-pwl-'+qty+'.png', dpi=600)
 plt.show()
