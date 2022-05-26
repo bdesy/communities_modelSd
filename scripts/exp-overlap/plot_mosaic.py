@@ -71,24 +71,24 @@ def plot_coordinates(ax, SD, n):
         plot_sphere(ax, SD.coordinates, SD.communities, n, SD.N)
 
 def plot_blockmatrix(ax, SD, cmap):
-    ax.imshow(np.log10(SD.blockmatrix+1e-5), cmap=cmap, vmin=-5, vmax=0)
+    im = ax.imshow(np.log10(SD.blockmatrix+1e-5), cmap=cmap, vmin=-5, vmax=0)
     ax.axis('off')
+    return im
 
 def main():
     N = 1000
     n = 15
-    frac_sigma_max = [0.1, 0.5, 0.9]
+    frac_sigma_max = [0.2, 0.5, 0.8]
     br=3.5
     mu = 0.01
-    average_k = 10.
+    average_k = 4.
     rng = np.random.default_rng()
     opt_params = {'tol':0.2, 
             'max_iterations': 1000, 
             'perturbation': 0.1,
             'verbose':False}
     target_degrees = get_target_degree_sequence(average_k, N, 
-                                            rng, 'exp', sorted=False) 
-
+                                            rng, 'pwl', sorted=False) 
     #sampling models
     models=[[],[],[]]
     for i in range(3):
@@ -104,12 +104,13 @@ def main():
             order = get_order_theta_within_communities(SD, n)
             SD.build_probability_matrix(order=order) 
             block_mat = get_community_block_matrix(SD, n)
-            SD.blockmatrix = normalize_block_matrix(block_mat, n)
+            SD.blockmatrix = normalize_block_matrix(block_mat, n, all_edges=True)
             models[i].append(SD)
     #plot
     cmaps=['Purples', 'Blues']
     projections=['polar', '3d']
     num = [[],[],[]]
+    cbar=False
 
     fig = plt.figure(figsize=(6,4))
     k=1
@@ -122,9 +123,11 @@ def main():
                 k+=1
             else:
                 ax = fig.add_subplot(3,4,k)
-                plot_blockmatrix(ax, models[i][D-1], cmap=cmaps[D-1])
+                im = plot_blockmatrix(ax, models[i][D-1], cmap=cmaps[D-1])
+                if cbar:
+                    plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
                 k+=1
-    plt.savefig('mosaic', dpi=600)
+    plt.savefig('mosaicpwl', dpi=600)
     plt.show()
 
 
