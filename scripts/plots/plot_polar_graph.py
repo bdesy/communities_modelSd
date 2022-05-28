@@ -29,8 +29,31 @@ from overlap_util import *
 def compute_radius(kappa, kappa_0, R_hat):
     return R_hat - 2*np.log(kappa/kappa_0)
 
-def get_hyperbolic_edge(t1, t2, r1, r2):
-    return [t1, t2], [r1, r2]
+def get_hyperbolic_edge(t1, t2, r1, r2, R_max):
+    a = r1/R_max*np.exp(1j*t1)
+    b = r2/R_max*np.exp(1j*t2)
+    q = a*(1+abs(b)**2) - b*(1+abs(a)**2)
+    q /= a*np.conj(b) - np.conj(a)*b
+    r = abs(a-q)
+    return q, r
+
+def smaller_arc(arc_angle):
+    result = arc_angle.copy()
+    if abs(result[0]-result[1]) > np.pi:
+        if result[0]<result[1]:
+            result[0] += 2*np.pi
+        else:
+            result[1] += 2*np.pi
+    return np.sort(result)
+    
+def arc_angle(pts, center):
+    angles = np.angle(pts-center)
+    return smaller_arc(angles)
+
+def plot_circle_arc(ax, radius=1, lower_lim=0, upper_lim=2*np.pi, num=360, R_max=1, color='k'):
+    t = np.linspace(lower_lim, upper_lim, num=360)
+    unitcircle = R_max*radius*np.exp(1j*t)
+    ax.plot(unitcircle.real, unitcircle.imag,c=color)
 
 # Parse input parameters
 
@@ -58,22 +81,18 @@ if sampling:
     rng = np.random.default_rng()
 
     #sample angular coordinates on sphere and circle
-    coordinatesS2, centersS2 = get_communities_coordinates(nb_com, N, 
-                                                        sigma2, 
-                                                        place='uniformly', 
-                                                        output_centers=True)
     coordinatesS1, centers = get_communities_coordinates(nb_com, N, sigma1, 
                                                             place='equator',
                                                             output_centers=True)
     coordinatesS1 = (coordinatesS1.T[0]).reshape((N, 1))
     centersS1 = (centers.T[0]).reshape((nb_com, 1))
 
-    coordinates = [coordinatesS1, coordinatesS2]
-    centers = [centersS1, centersS2]
+    coordinates = [coordinatesS1]
+    centers = [centersS1]
 
     #graph stuff
     mu = 0.01
-    average_k = 10.
+    average_k = 5.
     target_degrees = get_target_degree_sequence(average_k, 
                                                 N, 
                                                 rng, 
@@ -135,11 +154,14 @@ elif args.mode=='presentation':
 fig = plt.figure(figsize=(3.375,3))
 rect = [0.1, 0.1, 0.8, 0.8]
 ax = fig.add_axes(rect, projection='polar')
-
+i=0
 for edge in G.edges():
-    n1, n2 = edge
-    theta, r = get_hyperbolic_edge(thetas[n1], thetas[n2], radiuses[n1], radiuses[n2])
-    ax.plot(theta, r, c='k', linewidth=0.5, alpha=0.4)
+    if i<2:
+        n1, n2 = edge
+        center, radius = get_hyperbolic_edge(thetas[n1], thetas[n2], radiuses[n1], radiuses[n2], R_hat)
+        plot_circle_arc(ax, center, radius, color='k', R_max=R_hat)
+        #ax.plot(theta, r, c='k', linewidth=0.5, alpha=0.4)
+        i+=1
 
 for node in G.nodes():
     community = SD.communities[node]
@@ -183,7 +205,8 @@ if args.density:
 if args.save:
     plt.savefig('fig1_'+args.community, dpi=600)
 
-plt.ylim(0.01, R_hat*1.2)
+plt.ylim(0., R_hat)
+plt.plot(np.linspace(0, 2*np.pi, 1000), np.ones(1000)*R_hat, c='k')
 plt.show()
 
 
