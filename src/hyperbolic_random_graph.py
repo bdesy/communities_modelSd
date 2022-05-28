@@ -36,6 +36,10 @@ class ModelSD():
         self.kappas = self.lp.kappas
         self.target_degrees = self.lp.target_degrees
 
+    def get_H2_stuff(self):
+        self.kappa_0 = 1.0 #POULET
+        self.R_max = 2*np.log(self.N / (self.mu*np.pi*self.kappa_0**2)) #POULET
+
     def load_all_parameters_from_file(self, path):
         self.gp.load_from_file(path+'gp.pkl')
         self.lp.load_from_file(path+'lp.pkl')
@@ -82,6 +86,20 @@ class ModelSD():
                                                     self.coordinates, 
                                                     self.D, 
                                                     euclidean=self.euclidean,  
+                                                    order=order)
+
+    def build_hyperbolic_distance_matrix(self, order=None):
+        self.get_H2_stuff()
+        if type(order) is str:
+            if order=='theta':
+                order = np.argsort(self.coordinates.T[0])
+        self.hyperbolic_distance_matrix = build_hyperbolic_distance_matrix(self.N, 
+                                                    self.coordinates, 
+                                                    self.kappas,
+                                                    self.D, 
+                                                    euclidean=self.euclidean,  
+                                                    kappa_0=self.kappa_0, 
+                                                    R_max=self.R_max,
                                                     order=order)
 
     def sample_random_matrix(self):

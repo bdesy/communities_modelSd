@@ -83,6 +83,23 @@ def build_probability_matrix(N, coordinates, kappas, global_parameters, order=No
             mat[i,j] = compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, global_parameters)
     return mat+mat.T
 
+def change_to_radial_coord(kappa, kappa_0, R_max):
+    return R_max - 2*np.log(kappa/kappa_0)
+
+def build_hyperbolic_distance_matrix(N, coordinates, kappas, D, euclidean, kappa_0, R_max, order=None):
+    mat = np.zeros((N,N))
+    if order is None:
+        order = np.arange(N)
+    for i in range(N):
+        coord_i = coordinates[order[i]]
+        r_i = change_to_radial_coord(kappas[order[i]], kappa_0, R_max)
+        for j in range(i):
+            r_j = change_to_radial_coord(kappas[order[j]], kappa_0, R_max)
+            coord_j = coordinates[order[j]]
+            theta = compute_angular_distance(coord_i, coord_j, D, euclidean)
+            mat[i,j] = r_i + r_j + 2*np.log(theta/2)
+    return mat+mat.T
+
 def get_global_params_dict(N, D, beta, mu):
     R=compute_radius(N, D)
     if D<2.5:
