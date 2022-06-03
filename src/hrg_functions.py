@@ -83,9 +83,11 @@ def build_probability_matrix(N, coordinates, kappas, global_parameters, order=No
             mat[i,j] = compute_connection_probability(coord_i, coord_j, kappa_i, kappa_j, global_parameters)
     return mat+mat.T
 
+@njit
 def change_to_radial_coord(kappa, kappa_0, R_max):
     return R_max - 2*np.log(kappa/kappa_0)
 
+@njit
 def build_hyperbolic_distance_matrix(N, coordinates, kappas, D, euclidean, kappa_0, R_max, order=None):
     mat = np.zeros((N,N))
     if order is None:

@@ -87,6 +87,11 @@ class ModelSD():
                                                     self.D, 
                                                     euclidean=self.euclidean,  
                                                     order=order)
+    def compute_expected_degrees(self):
+        self.expected_degrees = compute_all_expected_degrees(self.N, 
+                                                    self.coordinates, 
+                                                    self.kappas, 
+                                                    (self.D, self.N, self.mu, self.beta, self.R, self.euclidean))
 
     def build_hyperbolic_distance_matrix(self, order=None):
         self.get_H2_stuff()

@@ -53,21 +53,20 @@ def prefactor(D, R, y, mu, k_0):
     out *= k_0**(2*(y-1))
     return out
 
-
 def pdf_eta_pareto(eta, D, R, y, mu, k_0):
     out = eta**(D*(1-y)-1)
     out *= np.log(((eta*R)**D)/(mu*k_0**2))
     out *= prefactor(D, R, y, mu, k_0)
     return out
 
-def integrand_exponential(k, eta, D, R, y, mu, k_0):
+def integrand_exponential(k, eta, D, R, y, mu):
     arg = (eta*R)**D / (mu*k)
     out = np.exp(-y*(k-1)) * np.exp(-y * (arg-1))
     return out * y**2 / k
 
-def pdf_eta_exponential(eta, D, R, y, mu, k_0):
-    hi = (eta*R)**D / (mu*k_0)
-    out, error = quad(integrand_exponential, k_0, hi, args=(eta, D, R, y, mu, k_0))
+def pdf_eta_exponential(eta, D, R, y, mu):
+    hi = (eta*R)**D / mu
+    out, error = quad(integrand_exponential, 1, hi, args=(eta, D, R, y, mu))
     out *= D * R**D / (mu * eta**(1.-D))
     return out
 
@@ -75,7 +74,7 @@ def other_integrand(eta, D, R, y, mu, k_0, beta, Dt, dd):
     if dd=='pwl':
         out = pdf_eta_pareto(eta, D, R, y, mu, k_0)
     elif dd=='exp':
-        out = pdf_eta_exponential(eta, D, R, y, mu, k_0)
+        out = pdf_eta_exponential(eta, D, R, y, mu)
     if beta<np.inf:
         out /= (1 + (Dt/eta)**beta)
     return out
@@ -208,11 +207,12 @@ for D in [5,4,3,2,1]:
     eta_axis = np.linspace(eta_0, 1., 1000)
     theo = np.zeros(eta_axis.shape)
     for i in range(1000):
-        theo[i] = pdf_eta_exponential(eta_axis[i], D, R, average_degree, mu, k_0)
-    print(theo)
+        theo[i] = pdf_eta_exponential(eta_axis[i], D, R, average_degree, mu)
     plt.hist(etas, bins=1000, density=True, alpha=0.5, color=colors[D-1], range=(0,1))
-    plt.plot(eta_axis, theo, color=colors[D-1], label=D)
+    plt.plot(eta_axis, theo*10, color=colors[D-1], label=D)
+    plt.axvline(eta_0, color=colors[D-1])
 plt.legend()
+plt.ylim(0,30)
 plt.show()
 
 #'''

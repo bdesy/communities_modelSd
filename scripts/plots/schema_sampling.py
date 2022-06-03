@@ -39,8 +39,8 @@ if sampling:
     N = 500
     nb_com = 10
     frac_sigma_max = 0.3
-    sigma1 = get_sigma_max(nb_com, 1)*frac_sigma_max
-    sigma2 = get_sigma_max(nb_com, 2)*frac_sigma_max
+    sigma1 = get_sigma_max(nb_com, 1)*3.5#*frac_sigma_max
+    sigma2 = get_sigma_max(nb_com, 2)*3.5#*frac_sigma_max
 
     beta_r = 3.5
     rng = np.random.default_rng()
@@ -61,11 +61,11 @@ if sampling:
 
     #graph stuff
     mu = 0.01
-    average_k = 10.
+    average_k = 4.
     target_degrees = get_target_degree_sequence(average_k, 
                                                 N, 
                                                 rng, 
-                                                'exp',
+                                                'pwl',
                                                 sorted=False) 
 
     #optimization stuff
@@ -96,9 +96,9 @@ if sampling:
         labels = np.arange(nb_com)
         SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
 
-        order = get_order_theta_within_communities(SD, nb_com)
+        #order = get_order_theta_within_communities(SD, nb_com)
 
-        SD.build_probability_matrix(order=order) 
+        SD.build_probability_matrix(order='theta') 
 
 
     m1 = get_community_block_matrix(S1, nb_com)
@@ -110,12 +110,19 @@ if sampling:
     m1 = normalize_block_matrix(m1, nb_com)
     m2 = normalize_block_matrix(m2, nb_com)
 
+    degs = np.linspace(0.01,60,1000)
+    y = 2.5
+    k0 = average_k*(y-2)/(y-1)
+    pareto = (y-1)*k0**(y-1)*degs**(-y)
+
     fig = plt.figure(figsize=(3,3))
     ax = fig.add_subplot(111)
-    plt.hist(target_degrees, bins=30, color='k', alpha=0.5)
+    plt.hist(target_degrees, bins=100, color='k', alpha=0.5, density=True)
+    plt.plot(degs, pareto, c='k')
     plt.yticks([],[])
     plt.xlabel('target degree')
-    plt.xlim(0, 60)
+    plt.xlim(0, 40)
+    plt.ylim(0, 0.4)
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     plt.tight_layout()
@@ -129,7 +136,7 @@ if sampling:
     ax.scatter(theta, np.ones(theta.shape), color=c1, s=40, linewidths=1, edgecolors='white',zorder=1)
     plt.ylim(0,1.5)
     plt.axis('off')
-    #plt.savefig('schematic/circle_coord')
+    plt.savefig('schematic/circle_coord_unif')
     plt.show()
 
     #the sphere
@@ -160,12 +167,12 @@ if sampling:
     fig = plt.figure(figsize=(3,3))
     plt.imshow(np.log10(S1.probs+1e-5), cmap='Purples', vmin=-5, vmax=0)
     plt.axis('off')
-    #plt.savefig('schematic/S1_probs')
+    plt.savefig('schematic/S1_probs_unif')
     plt.show()
     fig = plt.figure(figsize=(3,3))
     plt.imshow(np.log10(S2.probs+1e-5), cmap='Blues', vmin=-5, vmax=0)
     plt.axis('off')
-    #plt.savefig('schematic/S2_probs')
+    plt.savefig('schematic/S2_probs_unif')
     plt.show()
 
     fig = plt.figure(figsize=(3,3))

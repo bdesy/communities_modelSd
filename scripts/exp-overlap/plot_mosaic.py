@@ -23,6 +23,20 @@ from scipy.optimize import fsolve
 matplotlib.rc('text', usetex=True)
 matplotlib.rc('font', size=12)
 
+def plot_hyperbolic_distance_dist(SD):
+    SD.build_hyperbolic_distance_matrix()
+    hd = SD.hyperbolic_distance_matrix
+    dist = []
+    for i in range(10):
+        A = SD.sample_random_matrix()
+        plt.imshow(A*hd)
+        plt.colorbar()
+        plt.show()
+        realized_distances = np.triu(A*hd)
+        for ind in np.where(realized_distances>0):
+            dist.append(hd[ind[0], ind[1]])
+    print(len(dist))
+
 
 def plot_circle(ax, coordinates, labels, nb_com, N):
     theta = np.mod(coordinates.flatten(), 2*np.pi)
@@ -82,6 +96,7 @@ def main():
     br=3.5
     mu = 0.01
     average_k = 4.
+    ok=False
     rng = np.random.default_rng()
     opt_params = {'tol':0.2, 
             'max_iterations': 1000, 
@@ -99,10 +114,11 @@ def main():
             beta = br*D
             global_params = get_global_params_dict(N, D, beta, mu)
             local_params = get_local_params(N, D, n, sigma, target_degrees)
-            SD = sample_model(global_params, local_params, opt_params, average_k, rng, optimize_kappas=True)
+            SD = sample_model(global_params, local_params, opt_params, average_k, rng, optimize_kappas=ok)
             define_communities(SD, n, reassign=True)
             order = get_order_theta_within_communities(SD, n)
             SD.build_probability_matrix(order=order) 
+            plot_hyperbolic_distance_dist(SD)
             block_mat = get_community_block_matrix(SD, n)
             SD.blockmatrix = normalize_block_matrix(block_mat, n, all_edges=True)
             models[i].append(SD)

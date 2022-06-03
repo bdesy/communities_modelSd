@@ -70,8 +70,8 @@ args = parser.parse_args()
 # Load graph data and parameters
 sampling=True
 if sampling:
-    N = 300
-    nb_com = 15
+    N = 10
+    nb_com = 5
     D=1
     frac_sigma_max = 0.3
     sigma1 = get_sigma_max(nb_com, 1)*frac_sigma_max
@@ -92,7 +92,7 @@ if sampling:
 
     #graph stuff
     mu = 0.01
-    average_k = 5.
+    average_k = 3.
     target_degrees = get_target_degree_sequence(average_k, 
                                                 N, 
                                                 rng, 
@@ -126,7 +126,12 @@ if sampling:
     SD.build_probability_matrix() 
 
 A = SD.sample_random_matrix()
+
+plt.imshow(A)
+plt.colorbar()
+plt.show()
 G = nx.from_numpy_matrix(A)
+print(len(G.edges()))
 
 # Compute radii 
 
@@ -154,18 +159,15 @@ elif args.mode=='presentation':
 fig = plt.figure(figsize=(3.375,3))
 rect = [0.1, 0.1, 0.8, 0.8]
 ax = fig.add_axes(rect, projection='polar')
-i=0
 for edge in G.edges():
-    if i<2:
-        n1, n2 = edge
-        center, radius = get_hyperbolic_edge(thetas[n1], thetas[n2], radiuses[n1], radiuses[n2], R_hat)
-        plot_circle_arc(ax, center, radius, color='k', R_max=R_hat)
-        #ax.plot(theta, r, c='k', linewidth=0.5, alpha=0.4)
-        i+=1
+    n1, n2 = edge
+    center, radius = get_hyperbolic_edge(thetas[n1], thetas[n2], radiuses[n1], radiuses[n2], R_hat)
+    #plot_circle_arc(ax, center, radius, color='k', R_max=R_hat)
+    ax.plot([thetas[n1], thetas[n2]], [radiuses[n1], radiuses[n2]], c='k', linewidth=1.)
 
 for node in G.nodes():
     community = SD.communities[node]
-    color = plt.cm.tab10(community%10)
+    color = 'darkcyan'#plt.cm.tab10(community%10)
     ax.plot(thetas[node], radiuses[node], 'o', ms=ms[0], c='white')
     ax.plot(thetas[node], radiuses[node], 'o', ms=ms[1], c=color)
 

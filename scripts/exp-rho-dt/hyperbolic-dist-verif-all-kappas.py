@@ -41,8 +41,13 @@ args = parser.parse_args()
 N = args.nb_nodes
 kappa = args.kappa
 dd = args.degree_distribution
+average_k = args.kappa
 
 rng = np.random.default_rng()
+opt_params = {'tol':0.2, 
+        'max_iterations': 1000, 
+        'perturbation': 0.1,
+        'verbose':True}
 
 for D in [2,1]:
     dist = []
@@ -51,40 +56,48 @@ for D in [2,1]:
         euclidean=False
     else:
         euclidean=True
-    global_parameters = {'N':N, 
+    global_params = {'N':N, 
                     'dimension': D,
                     'mu': compute_default_mu(D, beta, kappa),
                     'radius':compute_radius(N, D),
                     'beta':beta, 
                     'euclidean':euclidean}
     coordinates = sample_uniformly_on_hypersphere(N, D)
-    for i in tqdm(range(10)):
+    for i in tqdm(range(3)):
+        print(D,'D', i, 'iteration')
         if len(dist)<1e6:
-            kappas = get_target_degree_sequence(kappa, N, rng, dd, sorted=False, y=args.gamma)
-            local_parameters = {'coordinates':coordinates,
-                            'kappas':kappas,
+            target_degrees = get_target_degree_sequence(kappa, N, rng, dd, sorted=False, y=args.gamma)
+            local_params = {'coordinates':coordinates,
+                            'kappas':target_degrees,
                             'nodes':np.arange(N),
-                            'target_degrees':np.ones(N)*args.kappa}
+                            'target_degrees':target_degrees}
             SD = ModelSD()
-            SD.gp.specify(global_parameters)
-            SD.lp.specify(local_parameters)
+            SD.specify_parameters(global_params, local_params, opt_params)
+            SD.set_mu_to_default_value(average_k)
             SD.reassign_parameters()
+
+            SD.compute_expected_degrees()
+            plt.plot(np.sort(SD.expected_degrees), c=colors[D-1])
+            #SD.optimize_kappas(rng)
+            #SD.reassign_parameters()
+
             SD.build_probability_matrix()
-            SD.build_angular_distance_matrix()
+            SD.build_hyperbolic_distance_matrix()
             
             A = SD.sample_random_matrix()
             m = np.sum(np.triu(A))
-            connected_angular_distances = np.triu(A*SD.angular_distance_matrix)
-            for ind in np.argwhere(connected_angular_distances>0.):
-                dist.append(connected_angular_distances[ind[0], ind[1]])
+            connected_hyperbolic_distances = np.triu(A*SD.hyperbolic_distance_matrix)
+            for ind in np.argwhere(connected_hyperbolic_distances>0.):
+                dist.append(connected_hyperbolic_distances[ind[0], ind[1]])
     if dd=='pwl':
-        filename = 'data/D{}-gamma{}-beta{}.txt'.format(D, args.gamma, args.beta_ratio)
+        filename = 'data/hyper-D{}-gamma{}-beta{}.txt'.format(D, args.gamma, args.beta_ratio)
     elif dd=='exp':
-        filename = 'data/all-kappa-verif/exp-D{}-lambda{}-beta{}.txt'.format(D, kappa, args.beta_ratio)
+        filename = 'data/all-kappa-verif/hyper-exp-D{}-lambda{}-beta{}.txt'.format(D, kappa, args.beta_ratio)
     np.savetxt(filename, np.array(dist))
 
-    plt.hist(dist, bins=200, density=True, alpha=0.5, color=colors[D-1])
-    plt.show()
+    #plt.hist(dist, bins=200, density=True, alpha=0.5, color=colors[D-1], label='D={}'.format(D))
+plt.legend()
+plt.show()
 '''
 Dthetas = np.linspace(1e-5, np.pi, 1000)
 rho = np.sin(Dthetas)**(D-1)

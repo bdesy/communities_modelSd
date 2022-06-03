@@ -130,7 +130,7 @@ plt.xlim(0., 0.9)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 plt.tight_layout()
-#plt.savefig('figure_densities_article', dpi=600)
+plt.savefig('figure_densities_article', dpi=600)
 plt.show()
 
 def puissance_sin(dt, D):
