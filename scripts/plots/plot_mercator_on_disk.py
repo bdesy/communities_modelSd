@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 
-Plot a network in hyperbolic plane whilst accentuating community structure and node densities.
+Plot a network in hyperbolic plane whith edges following geodesics from the conformal disk model.
 
 Author: Béatrice Désy
 
@@ -27,7 +27,9 @@ from overlap_util import *
 # Define sub-recipes
 
 def compute_radius(kappa, kappa_0, R_hat):
-    return (R_hat - 2*np.log(kappa/kappa_0)) / R_hat
+    hyperbolic_r = (R_hat - 2*np.log(kappa/kappa_0))/R_hat
+    #euclidean_r = np.tanh(hyperbolic_r/2)
+    return hyperbolic_r
 
 def get_hyperbolic_edge(t1, t2, r1, r2, R_max):
     a = r1*np.exp(1j*t1)
@@ -37,23 +39,39 @@ def get_hyperbolic_edge(t1, t2, r1, r2, R_max):
     r = abs(a-q)
     return q, r
 
-def smaller_arc(arc_angle):
-    result = arc_angle.copy()
-    if abs(result[0]-result[1]) > np.pi:
-        if result[0]<result[1]:
-            result[0] += 2*np.pi
-        else:
-            result[1] += 2*np.pi
-    return np.sort(result)
-    
-def arc_angle(pts, center):
-    angles = np.angle(pts-center)
-    return smaller_arc(angles)
+def obtain_angles_array(x, y, q, r, num=360):
+    anglex = np.angle(x - q)
+    angley = np.angle(y - q)
+    dist = compute_angular_distance(np.array(anglex), np.array(angley), dimension=1, euclidean=False)
+    arc = abs(angley - anglex)%np.pi
+    if abs(arc-dist)<1e-5:
+        angles = np.linspace(anglex, angley, num=360)
+    else:
+        arr = np.array([anglex, angley])
+        angles1 = np.linspace(np.min(arr), -np.pi, num=180)
+        angles2 = np.linspace(np.pi, np.max(arr), num=180)
+        angles = np.hstack((angles1, angles2))
+    return angles
 
-def plot_circle_arc(ax, radius=1, lower_lim=0, upper_lim=2*np.pi, num=360, color='k'):
-    t = np.linspace(lower_lim, upper_lim, num=360)
-    unitcircle = radius*np.exp(1j*t)
-    ax.plot(unitcircle.real, unitcircle.imag,c=color)
+
+def plot_circle_arc(ax, x, y, center, radius=1, num=360, color='k'):
+    t = obtain_angles_array(x, y, center, radius, num=num)
+    #t = np.linspace(0, 2*np.pi, num)
+    r = np.ones(t.shape)*radius
+    unitcircle = radius*np.exp(1j*t) + center
+    ax.plot(unitcircle.real, unitcircle.imag, c=color, linewidth=0.5)
+
+
+def change_to_lorenz_coordinates(coordinates, radiuses, zeta=1.):
+    x = (1./zeta)*np.cosh(zeta*radiuses)
+    y = (1./zeta)*np.sinh(zeta*radiuses)*np.cos(coordinates)
+    z = (1./zeta)*np.sinh(zeta*radiuses)*np.sin(coordinates)
+    return x,y,z
+
+def project_on_disk(x,y,z):
+    xb = y/(1+x)
+    yb = z/(1+x)
+    return xb, yb
 
 # Parse input parameters
 
@@ -61,8 +79,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-ok', '--optimize_kappas', type=bool, default=False)
 parser.add_argument('--mode', '-m', type=str, default='normal',
                     help='optional presentation mode for bigger stuff')
-parser.add_argument('--density', '-d', type=bool, default=False,
-                    help='to turn off angular density plot on the circumference')
 parser.add_argument('--save', '-s', type=bool, default=False,
                     help='to save or not the figure')
 args = parser.parse_args()
@@ -70,7 +86,7 @@ args = parser.parse_args()
 # Load graph data and parameters
 sampling=True
 if sampling:
-    N = 10
+    N = 200
     nb_com = 5
     D=1
     frac_sigma_max = 0.3
@@ -84,19 +100,16 @@ if sampling:
     coordinatesS1, centers = get_communities_coordinates(nb_com, N, sigma1, 
                                                             place='equator',
                                                             output_centers=True)
-    coordinatesS1 = (coordinatesS1.T[0]).reshape((N, 1))
-    centersS1 = (centers.T[0]).reshape((nb_com, 1))
-
-    coordinates = [coordinatesS1]
-    centers = [centersS1]
+    coordinates = (coordinatesS1.T[0]).reshape((N, 1))
+    centers = (centers.T[0]).reshape((nb_com, 1))
 
     #graph stuff
     mu = 0.01
-    average_k = 3.
+    average_k = 4.
     target_degrees = get_target_degree_sequence(average_k, 
                                                 N, 
                                                 rng, 
-                                                'exp',
+                                                'pwl',
                                                 sorted=False) 
 
     #optimization stuff
@@ -108,7 +121,7 @@ if sampling:
 
     SD = ModelSD()
     global_params = get_global_params_dict(N, D, beta_r*D, mu)
-    local_params = {'coordinates':coordinates[D-1], 
+    local_params = {'coordinates':coordinates, 
                         'kappas': target_degrees+1e-3, 
                         'target_degrees':target_degrees, 
                         'nodes':np.arange(N)}
@@ -121,17 +134,16 @@ if sampling:
         SD.reassign_parameters()
 
     labels = np.arange(nb_com)
-    SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
+    SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers, labels)
 
     SD.build_probability_matrix() 
 
 A = SD.sample_random_matrix()
 
-plt.imshow(A)
-plt.colorbar()
-plt.show()
+#plt.imshow(A)
+#plt.colorbar()
+#plt.show()
 G = nx.from_numpy_matrix(A)
-print(len(G.edges()))
 
 # Compute radii 
 
@@ -148,7 +160,7 @@ thetas = SD.coordinates
 if args.mode=='normal':
     matplotlib.rc('xtick', labelsize=14) 
     matplotlib.rc('ytick', labelsize=14) 
-    ms=[5,3]
+    ms=[3,2]
 elif args.mode=='presentation':
     matplotlib.rc('xtick', labelsize=20) 
     matplotlib.rc('ytick', labelsize=20) 
@@ -156,60 +168,43 @@ elif args.mode=='presentation':
 
 # Plot figure
 
-fig = plt.figure(figsize=(3.375,3))
+fig = plt.figure(figsize=(5,5))
 rect = [0.1, 0.1, 0.8, 0.8]
-ax = fig.add_axes(rect, projection='polar')
+ax = fig.add_axes(rect, )
+
+imag_coord = radiuses * np.exp(1j*thetas).flatten()
+
+i=0
 for edge in G.edges():
     n1, n2 = edge
     center, radius = get_hyperbolic_edge(thetas[n1], thetas[n2], radiuses[n1], radiuses[n2], R_hat)
-    plot_circle_arc(ax, center, radius, color='k', R_max=R_hat)
-    #ax.plot([thetas[n1], thetas[n2]], [radiuses[n1], radiuses[n2]], c='k', linewidth=1.)
+    plot_circle_arc(ax, imag_coord[n1], imag_coord[n2], center, radius, color='k')
+    i+=1
 
 for node in G.nodes():
     community = SD.communities[node]
     color = 'darkcyan'#plt.cm.tab10(community%10)
-    ax.plot(thetas[node], radiuses[node], 'o', ms=ms[0], c='white')
-    ax.plot(thetas[node], radiuses[node], 'o', ms=ms[1], c=color)
+    x,y = imag_coord[node].real, imag_coord[node].imag
+    plt.plot(x,y, 'o', ms=ms[0], c='white')
+    plt.plot(x,y, 'o', ms=ms[1], c=color)
 
-ax.set_xticks([])
-ax.set_yticks([])
-ax.spines['polar'].set_visible(False)
+sanity=False
+if sanity:
+    xl,yl,zl = change_to_lorenz_coordinates(coordinates.flatten(), np.array(radiuses), zeta=1.)
+    xb, yb = project_on_disk(xl,yl,zl)
+    plt.plot(xb,yb,'o', c='green', ms=1)
 
-if args.density:
-    tt = np.linspace(0.0,2*np.pi, 1000)
-    kde = gaussian_kde(thetas.T[0], bw_method=0.02)
-    upper = kde(tt)
-    '''
-    upper /= np.max(upper)
-    upper *= (R_hat*1.1 - R_hat)
-    upper += R_hat
-    lower = np.ones(1000)*R_hat
-    #ax.fill_between(tt, lower, upper, alpha=0.3, color='darkcyan')
-    #ax.plot(tt, upper, c='darkcyan', linewidth=1)
-
-    xx = np.linspace(0.01, R_hat, 1000)
-    kde_r = gaussian_kde(radiuses, bw_method=0.07)
-    yy = np.array(kde_r(xx))
-    yy = yy/np.max(yy)*R_hat/3
-
-    r_den = np.sqrt(xx**2 + yy**2)
-    th_den = np.arccos(xx / r_den)'''
-
-    
-    used_theta=np.linspace(0, 2*np.pi, 1000)
-    used_rad = np.linspace(R_hat*1.05, R_hat*1.15, 1000)
-    X,Y = np.meshgrid(used_theta, used_rad) #rectangular plot of polar data
-    truc = upper.reshape((1,1000))
-    density = np.repeat(truc, repeats=1000, axis=0)
-    #print(density.shape)
-    ax.pcolormesh(X, Y, density, cmap='Purples')
+clean=True
+if clean:
+    ax.set_xticks([])
+    ax.set_yticks([])
+    plt.axis('off')
+    plt.ylim(-1.,1.)
+    plt.xlim(-1.,1.)
 
 if args.save:
     plt.savefig('fig1_'+args.community, dpi=600)
 
-plt.ylim(0., R_hat)
-plt.plot(np.linspace(0, 2*np.pi, 1000), np.ones(1000)*R_hat, c='k')
+out_circ = np.exp(1j*np.linspace(0,2*np.pi, 1000))
+plt.plot(out_circ.real, out_circ.imag, c='tomato')
 plt.show()
-
-
-
