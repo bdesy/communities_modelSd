@@ -113,13 +113,13 @@ def integrated_connection_prob_eta(eta, beta, D):
         I, error = quad(integrand_eta_infinite_beta, 0, eta, args=(D))
     return I
 
-fig = plt.figure(figsize=(3.375, 3))
+fig = plt.figure(figsize=(3.4, 3.0))
 ax = fig.add_subplot(111)
 ratio=3.5
-dd='exp'
-'''
-compute=False
-verif=True
+dd='pwl'
+
+compute=True
+verif=False
 limit=False
 
 for D in range(Dmax, Dmin-1, -1):
@@ -182,12 +182,12 @@ order = [4,3,2,1,0]
 plt.legend([handles[idx] for idx in order], [labels[idx] for idx in order], 
             loc=(0.09, 0.583), frameon=False) 
 
-plt.ylim(0., 20.)
+plt.ylim(0., 10.)
 plt.xlim(0., 0.9)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 plt.tight_layout()
-plt.savefig('densities_all_kappas', dpi=600)
+plt.savefig('densities_all_kappas.svg', dpi=600, format='svg')
 plt.show()
 
 '''

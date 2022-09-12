@@ -28,7 +28,7 @@ opt_params = {'tol':1e-1,
             'verbose':True}
 rng = np.random.default_rng()
 
-all_kappas=False
+all_kappas=True
 
 if all_kappas:
     target_degrees = get_target_degree_sequence(average_k, 
@@ -64,5 +64,5 @@ for D in [1,2]:
     plt.yticks([])
     plt.tight_layout()
     plt.axis('off')
-    plt.savefig('mat{}'.format(D), dpi=600)
+    plt.savefig('mat{}.svg'.format(D), dpi=600, format='svg')
     plt.show()

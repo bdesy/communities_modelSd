@@ -34,7 +34,7 @@ formats = [':', '--', '-']
 bidon = np.linspace(100, 110, 1000)
 
 qty='S'
-fig = plt.figure(figsize=(3,3))
+fig = plt.figure(figsize=(2.8,3.))
 ax = fig.add_subplot()
 for c in range(len(nc_list)):
     nc = nc_list[c]
@@ -56,16 +56,17 @@ for c in range(len(nc_list)):
 plt.ylabel(r'$S$ (bits)')
 plt.xlabel(r'$\sigma$')
 plt.xlim(0.05,0.95)
+plt.xticks([0.2, 0.4, 0.6, 0.8])
 #plt.ylim(0.5, 5.2)
 #plt.legend(ncol=2, loc=4)
 plt.tight_layout()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.savefig('figures/article-pwl-'+qty+'.png', dpi=600)
+plt.savefig('figures/article-pwl-'+qty+'.svg', dpi=600, format='svg')
 plt.show()
 
 qty='r'
-fig = plt.figure(figsize=(3,3))
+fig = plt.figure(figsize=(2.8,3.0))
 ax = fig.add_subplot()
 for c in range(len(nc_list)):
     nc = nc_list[c]
@@ -90,13 +91,14 @@ plt.xlim(0.05,0.95)
 plt.ylim(0.,0.7)
 plt.tight_layout()
 plt.legend(ncol=2, frameon=False, loc=(0.05, 0.75),columnspacing=1.)
+plt.xticks([0.2, 0.4, 0.6, 0.8])
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.savefig('figures/article-pwl-'+qty+'.png', dpi=600)
+plt.savefig('figures/article-pwl-'+qty+'.svg', dpi=600, format='svg')
 plt.show()
 
 qty='degrees'
-fig = plt.figure(figsize=(3.375, 3))
+fig = plt.figure(figsize=(3.4, 3.))
 ax = fig.add_subplot()
 for c in range(len(nc_list)):
     nc = nc_list[c]
@@ -120,7 +122,7 @@ for c in range(len(nc_list)):
                         alpha=0.3, color=colors[D-1], linewidth=0.0)
 
 #plt.title('block matrix <k>\n'+r'$\beta/D={}, $'.format(br)+dd+' degree distribution')
-plt.ylabel(r'$<k>$')
+plt.ylabel(r'$\langle k \rangle$')
 plt.xlabel(r'$\sigma$')
 plt.xlim(0.05,0.95)
 plt.ylim(0, 21)
@@ -128,5 +130,6 @@ plt.legend(ncol=2, frameon=False, columnspacing=1.)
 plt.tight_layout()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.savefig('figures/article-pwl-'+qty+'.png', dpi=600)
+ax.set_rasterized(True)
+plt.savefig('figures/article-pwl-'+qty+'.eps', dpi=600, format='eps')
 plt.show()

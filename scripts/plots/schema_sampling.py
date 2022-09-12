@@ -38,9 +38,9 @@ if sampling:
         #setup
     N = 500
     nb_com = 10
-    frac_sigma_max = 0.3
-    sigma1 = get_sigma_max(nb_com, 1)*3.5#*frac_sigma_max
-    sigma2 = get_sigma_max(nb_com, 2)*3.5#*frac_sigma_max
+    frac_sigma_max = 0.4
+    sigma1 = get_sigma_max(nb_com, 1)*frac_sigma_max
+    sigma2 = get_sigma_max(nb_com, 2)*frac_sigma_max
 
     beta_r = 3.5
     rng = np.random.default_rng()
@@ -96,9 +96,9 @@ if sampling:
         labels = np.arange(nb_com)
         SD.communities = get_communities_array_closest(N, D, SD.coordinates, centers[D-1], labels)
 
-        #order = get_order_theta_within_communities(SD, nb_com)
+        order = get_order_theta_within_communities(SD, nb_com)
 
-        SD.build_probability_matrix(order='theta') 
+        SD.build_probability_matrix(order=order) 
 
 
     m1 = get_community_block_matrix(S1, nb_com)
@@ -126,17 +126,18 @@ if sampling:
     ax.spines['right'].set_visible(False)
     ax.spines['top'].set_visible(False)
     plt.tight_layout()
+    plt.savefig('schematic/target.svg', dpi=600, format='svg')
     plt.show()
 
     #the circle
     fig = plt.figure(figsize=(3,3))
     ax = fig.add_subplot(111, projection='polar')
     theta = np.mod(S1.coordinates.flatten(), 2*np.pi)
-    ax.plot(np.linspace(0, 2*np.pi, 1000), np.ones(1000), color='k', linewidth=0.5, zorder=10)
+    ax.plot(np.linspace(0, 2*np.pi, 1000), np.ones(1000), color='k', linewidth=0.5, zorder=10, alpha=0.3)
     ax.scatter(theta, np.ones(theta.shape), color=c1, s=40, linewidths=1, edgecolors='white',zorder=1)
     plt.ylim(0,1.5)
     plt.axis('off')
-    plt.savefig('schematic/circle_coord_unif')
+    plt.savefig('schematic/circle_coord_unif.svg', dpi=600, format='svg')
     plt.show()
 
     #the sphere
@@ -153,7 +154,10 @@ if sampling:
     zz = np.cos(phi)
     #plot sphere
     ax = fig.add_subplot(111, projection='3d')
-    ax.plot_surface(x, y, z, color='white', antialiased=False)
+    ax.plot_surface(
+        x, y, z,  rstride=1, cstride=1, color='white', alpha=0.1, linewidth=0,zorder=0)
+    #plt.plot(xx,yy,zz,'o', color='white',ms=9,zorder=8,alpha=0.5)
+    #ax.plot_surface(x, y, z, color='white', antialiased=False)
     nodes = np.where(theta>np.pi/2)
     ax.scatter(xx[nodes],yy[nodes],zz[nodes], color=c2, s=40, linewidths=1, edgecolors='white')
 
@@ -161,29 +165,29 @@ if sampling:
     ax.set_ylim([-l,l])
     ax.set_zlim([-l,l])
     ax.axis('off')
-    #plt.savefig('schematic/sphere_coord')
+    plt.savefig('schematic/sphere_coord.svg', dpi=600, format='svg')
     plt.show()
 
     fig = plt.figure(figsize=(3,3))
     plt.imshow(np.log10(S1.probs+1e-5), cmap='Purples', vmin=-5, vmax=0)
     plt.axis('off')
-    plt.savefig('schematic/S1_probs_unif')
+    plt.savefig('schematic/S1_probs_unif.svg', dpi=600, format='svg')
     plt.show()
     fig = plt.figure(figsize=(3,3))
     plt.imshow(np.log10(S2.probs+1e-5), cmap='Blues', vmin=-5, vmax=0)
     plt.axis('off')
-    plt.savefig('schematic/S2_probs_unif')
+    plt.savefig('schematic/S2_probs_unif.svg', dpi=600, format='svg')
     plt.show()
 
     fig = plt.figure(figsize=(3,3))
     plt.imshow(np.log10(m1+1e-5), cmap='Purples', vmin=-5, vmax=0)
     plt.axis('off')
-    #plt.savefig('schematic/S1_B')
+    plt.savefig('schematic/S1_B.svg', dpi=600, format='svg')
     plt.show()
     fig = plt.figure(figsize=(3,3))
     plt.imshow(np.log10(m2+1e-5), cmap='Blues', vmin=-5, vmax=0)
     plt.axis('off')
-    #plt.savefig('schematic/S2_B')
+    plt.savefig('schematic/S2_B.svg', dpi=600, format='svg')
     plt.show()
 
 

@@ -67,7 +67,7 @@ def limite_beta_eta(Dthetas, eta, D):
     return out
 
 
-fig = plt.figure(figsize=(3.375, 3))
+fig = plt.figure(figsize=(3.4, 3))
 ax = fig.add_subplot(111)
 
 for D in range(Dmax, Dmin-1, -1):
@@ -130,20 +130,20 @@ plt.xlim(0., 0.9)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 plt.tight_layout()
-plt.savefig('figure_densities_article', dpi=600)
+plt.savefig('figure_densities_article.svg', dpi=600, format='svg')
 plt.show()
 
 def puissance_sin(dt, D):
     return np.sin(dt)**(D-1)
 
-fig = plt.figure(figsize=(3.375, 2.5))
+fig = plt.figure(figsize=(3.4, 3.0))
 ax = fig.add_subplot(111)
 for D in [6,5,4,3,2,1]:
     c = colors[D-1]
     linestyle = '-'
     if D==6:
         D=50
-        linestyle = ':'
+        linestyle = '-'
     norm, err = quad(puissance_sin, 0, np.pi, args=(D))#gamma((D+1)/2.)/(np.sqrt(np.pi)*gamma(D/2.))
     plt.plot(Dthetas, np.sin(Dthetas)**(D-1)/norm, color='white', linewidth=4)
     plt.plot(Dthetas, np.sin(Dthetas)**(D-1)/norm, label=r'$D = {}$'.format(D), linestyle=linestyle,
@@ -162,5 +162,5 @@ plt.xlim(0., np.pi)
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 plt.tight_layout()
-plt.savefig('f_X_theta', dpi=600)
+plt.savefig('f_X_theta.eps', dpi=600, format='eps')
 plt.show()

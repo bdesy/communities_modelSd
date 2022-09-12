@@ -22,13 +22,13 @@ from hrg_functions import *
 from geometric_functions import *
 sys.path.insert(0, '../exp-overlap/')
 from overlap_util import *
-
+zomp = '#39a284'
+cray = '#484747'
 
 # Define sub-recipes
 
 def compute_radius(kappa, kappa_0, R_hat):
-    hyperbolic_r = (R_hat - 2*np.log(kappa/kappa_0))/R_hat
-    #euclidean_r = np.tanh(hyperbolic_r/2)
+    hyperbolic_r = R_hat - 2*np.log(kappa/kappa_0)
     return hyperbolic_r
 
 def get_hyperbolic_edge(t1, t2, r1, r2, R_max):
@@ -140,20 +140,41 @@ if sampling:
 
 A = SD.sample_random_matrix()
 
-#plt.imshow(A)
+fig=plt.figure(figsize=(6,6))
+ax=fig.add_subplot(111)
+plt.xticks([], [])
+plt.yticks([], [])
+plt.imshow(A, cmap='gray_r')
 #plt.colorbar()
-#plt.show()
-G = nx.from_numpy_matrix(A)
+plt.savefig('block_matrix.pdf', dpi=600, format='pdf')
+plt.show()
 
+
+
+G = nx.from_numpy_matrix(A)
+S = [G.subgraph(c).copy() for c in nx.connected_components(G)]
+#G.remove_nodes_from(nx.itertools.chain.from_iterable(small_components))
+
+fig=plt.figure(figsize=(6,6))
+ax=fig.add_subplot(111)
+pos = nx.spring_layout(G, k=0.3)
+nx.draw(S[0], pos=pos, node_size=60, node_color=cray, width=0, ax=ax)
+nx.draw(S[0], pos=pos, node_size=35, node_color=zomp, width=1, ax=ax, edge_color=cray)
+plt.savefig('block_matrix_res.pdf', dpi=600, format='pdf')
+plt.show()
+'''
 # Compute radii 
 
 kappa_0 = np.min(SD.kappas)
 R_hat = 2*np.log(N / (mu*np.pi*kappa_0**2))
 
-radiuses = compute_radius(SD.kappas, kappa_0, R_hat)
+radiuses_hyp = compute_radius(SD.kappas, kappa_0, R_hat)
+xr,yr,zr = change_to_lorenz_coordinates(coordinates.flatten(), radiuses_hyp, zeta=0.1) #ICI ÇA PREND LA BONNE COURBURE
+xb, yb = project_on_disk(xr,yr,zr)
 
+radiuses = np.sqrt(xb**2 + yb**2)
 
-kappas = SD.kappas
+print(radiuses_hyp/R_hat, radiuses)
 thetas = SD.coordinates    
 
 # Set plotting sizes
@@ -188,12 +209,6 @@ for node in G.nodes():
     plt.plot(x,y, 'o', ms=ms[0], c='white')
     plt.plot(x,y, 'o', ms=ms[1], c=color)
 
-sanity=False
-if sanity:
-    xl,yl,zl = change_to_lorenz_coordinates(coordinates.flatten(), np.array(radiuses), zeta=1.)
-    xb, yb = project_on_disk(xl,yl,zl)
-    plt.plot(xb,yb,'o', c='green', ms=1)
-
 clean=True
 if clean:
     ax.set_xticks([])
@@ -207,4 +222,4 @@ if args.save:
 
 out_circ = np.exp(1j*np.linspace(0,2*np.pi, 1000))
 plt.plot(out_circ.real, out_circ.imag, c='tomato')
-plt.show()
+plt.show()'''

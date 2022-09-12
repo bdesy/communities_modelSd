@@ -79,8 +79,8 @@ def binarize_using_backbone_method(m, alpha):
     assert np.max(out)<1.1, 'max is greater than 1'
     return out
 
-dd='exp'
-frac_sigma_axis = np.linspace(0.05, 0.95, 20)
+dd='pwl'
+frac_sigma_axis = np.linspace(0.05, 0.95, 30)
 beta_r = 3.5
 nc_list = [5,15,25]
 
@@ -88,10 +88,11 @@ t = 10
 
 compute = True
 if compute:
-    with open('data/experiment_entropy_blockmatrices.json', 'r') as read_file:
+    with open('data/experiment_entropy_pwl_deg4_blockmatrices.json', 'r') as read_file:
         matrices_dict = json.load(read_file)
-    with open('data/experiment_entropy.json', 'r') as read_file:
+    with open('data/experiment_entropy_pwl_deg4.json', 'r') as read_file:
         initial_data_dict = json.load(read_file)
+
     
     res = {}
     for D in [1,2]:
@@ -121,7 +122,7 @@ formats = [':', '--', '-']
 bidon = np.linspace(100, 110, 1000)
 
 sb = [121, 122]
-fig, axes = plt.subplots(1, 2, figsize=(3.375, 3), sharey=True)
+fig, axes = plt.subplots(1, 2, figsize=(3.4, 3.), sharey=True)
 i=0
 for bins in ['gthreshold'+str(int(t)), 'backbone']:
     ax = axes[i]
@@ -147,8 +148,15 @@ for bins in ['gthreshold'+str(int(t)), 'backbone']:
             ax.set_xlim(0.05, 0.95)
     i+=1
 
-axes[0].set_ylabel(r'$<k>$')
-axes[1].legend(loc=(0.053, 0.532))
+axes[0].set_ylabel(r'$\langle k\rangle$')
+axes[0].legend(loc=(0.053, 0.532), frameon=False)
+plt.ylim(0,7.5)
 plt.tight_layout()
-plt.savefig('binarization.png', dpi=600)
+axes[0].set_rasterized(True)
+axes[1].set_rasterized(True)
+axes[0].spines['top'].set_visible(False)
+axes[0].spines['right'].set_visible(False)
+axes[1].spines['top'].set_visible(False)
+axes[1].spines['right'].set_visible(False)
+plt.savefig('figures/binarization.eps', dpi=600, format='eps')
 plt.show()

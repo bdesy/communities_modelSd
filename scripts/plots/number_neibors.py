@@ -22,7 +22,7 @@ from geometric_functions import *
 
 
 matplotlib.rc('text', usetex=True)
-matplotlib.rc('font', size=12)
+matplotlib.rc('font', size=10)
 
 def number_nearest_neighbors_S2_disks_cos(nc):
     angle = 3*np.arccos(1 - 2./nc)
@@ -106,12 +106,12 @@ nc = np.arange(100)+1
 
 xmin, xmax = 1., 37.5
 ymin, ymax = 0., 37.
-fig, ax = plt.subplots(figsize=(5,4)) #(3.375, 3) À FAIRE
+fig, ax = plt.subplots(figsize=(3.4, 3.0)) #(3.375, 3) À FAIRE
 plt.rcParams.update({
     "text.usetex": True,})
 plt.plot(nc, nc-1, ':', c='k', linewidth=2)
 colors =[cmap(1./20), cmap(1.1/3), cmap(2./3), cmap(9./10), cmap(1.0), 'orange', 'tomato']
-angle=[0,2,5,19,27]
+angle=[0,2,7,21,30]
 for D in [5,4,3,2,1]:
     curve = number_nearest_neighbors_SD(nc, D)
     plt.plot(nc, curve,
@@ -121,7 +121,7 @@ for D in [5,4,3,2,1]:
             c=colors[D-1], label=r'$D={}$'.format(D),
             linewidth = 3.5)
 
-    ax.text(32.2, curve[32]-0.8, r'$D={}$'.format(D), rotation=angle[D-1], backgroundcolor='white')
+    ax.text(32.2, curve[32]-0.5, r'$D={}$'.format(D), rotation=angle[D-1], backgroundcolor='white', fontsize=7)
     #plt.axhline(3**D-1, linestyle=':', color=colors[D-1])
 
 plt.xlabel(r'$n$')
@@ -137,10 +137,10 @@ ax.spines['right'].set_visible(False)
 
 
 plt.tight_layout()
-#plt.savefig('figure_neighbors_lines', dpi=600)
+plt.savefig('figure_neighbors_lines.svg', dpi=600, format='svg')
 plt.show()
 
-schema = True
+schema = False
 if schema:
     thetas = np.linspace(0, 2*np.pi, 20, endpoint=False)
     circ = np.linspace(0, 2*np.pi, 1500)
@@ -152,7 +152,7 @@ if schema:
     plt.axis('off')
     plt.tight_layout()
     plt.ylim(0.,1.1)
-    #plt.savefig('circle', transparent=True, dpi=600)
+    plt.savefig('circle.svg', transparent=True, dpi=600, format='svg')
     plt.show()
 
     coordinates = place_modes_coordinates_on_sphere(20, place='uniformly')
@@ -182,5 +182,5 @@ if schema:
     ax.set_zlim(-l,l)
     plt.axis('off')
     plt.tight_layout()
-    #plt.savefig('sphere', transparent=True, dpi=600)
+    plt.savefig('sphere.svg', transparent=True, dpi=600, format='svg')
     plt.show()

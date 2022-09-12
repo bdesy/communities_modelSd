@@ -11,13 +11,16 @@ Date : 23/02/2022
 
 
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import sys
 sys.path.insert(0, '../../src/')
 from geometric_functions import *
 from overlap_util import * 
-from scipy.optimize import fsolve
+
+matplotlib.rc('text', usetex=True)
+matplotlib.rc('font', size=14)
 
 def get_max_sigma1_unif(n):
     sigma = np.sqrt(2*np.pi)/n
@@ -37,7 +40,7 @@ def plot_circle(ax, coordinates, labels, nb_com, N):
     ax.set_xticks([])
     ax.set_yticks([])
     ax.axis('off')
-    ax.set_ylim(0, 1.1)
+    ax.set_ylim(0, 1.5)
 
 def plot_sphere(ax, coordinates, labels, nb_com, N):
     #the sphere
@@ -52,7 +55,7 @@ def plot_sphere(ax, coordinates, labels, nb_com, N):
     zz = np.cos(phi)
     #plot sphere
     ax.plot_surface(
-        x, y, z,  rstride=1, cstride=1, color='c', alpha=0.3, linewidth=0)
+        x, y, z,  rstride=1, cstride=1, color='white', alpha=0.3, linewidth=0)
     for c in range(nb_com):
         color = plt.cm.tab10(c%10)
         nodes = np.where(labels==c)
@@ -63,7 +66,7 @@ def plot_sphere(ax, coordinates, labels, nb_com, N):
     ax.set_xticks([])
     ax.set_yticks([])
     ax.set_zticks([])
-    ax.axis('off')
+    ax.set_axis_off()
 
 def sum_vmf(x, n):
     s = np.exp(1./x**2)
@@ -118,10 +121,11 @@ def main():
             my_communities = get_communities_array(N, sizes)
             plot_circle(ax[i,j], coordinates, my_communities, n, N)
             if j==0:
-                ax[i,j].text(np.pi, 2.0, r'$n = {}$'.format(n))
+                ax[i,j].text(np.pi, 2.5, r'$n = {}$'.format(n))
             if i==0:
-                ax[i,j].set_title(r'$\sigma/\sigma_m = {}$'.format(f))
+                ax[i,j].set_title(r'$\sigma = {}$'.format(f))
     plt.axis('off')
+    plt.savefig('S1_sigma_max.pdf', dpi=600, format='pdf')
     plt.show()
 
     #plot for S^1
@@ -138,10 +142,11 @@ def main():
             my_communities = get_communities_array(N, sizes)
             plot_sphere(ax[i,j], coordinates, my_communities, n, N)
             #if j==0:
-                #ax[i,j].text(np.pi, 2.0, r'$n = {}$'.format(n))
+            #    ax[i,j].text(r'$n = {}$'.format(n))
             if i==0:
-                ax[i,j].set_title(r'$\sigma/\sigma_m = {}$'.format(f))
+                ax[i,j].set_title(r'$\sigma = {}$'.format(f))
     plt.axis('off')
+    plt.savefig('S2_sigma_max.pdf', dpi=600, format='pdf')
     plt.show()
 '''
     coordinatesS2, centersS2 = get_coordinates(N, 2, nb_com, sigma2, output_centers=True)

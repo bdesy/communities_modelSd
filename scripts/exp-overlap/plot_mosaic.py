@@ -96,12 +96,12 @@ def main():
     br=3.5
     mu = 0.01
     average_k = 4.
-    ok=False
+    ok=True
     rng = np.random.default_rng()
     opt_params = {'tol':0.2, 
             'max_iterations': 1000, 
             'perturbation': 0.1,
-            'verbose':False}
+            'verbose':True}
     target_degrees = get_target_degree_sequence(average_k, N, 
                                             rng, 'pwl', sorted=False) 
     #sampling models
@@ -118,7 +118,7 @@ def main():
             define_communities(SD, n, reassign=True)
             order = get_order_theta_within_communities(SD, n)
             SD.build_probability_matrix(order=order) 
-            plot_hyperbolic_distance_dist(SD)
+            #plot_hyperbolic_distance_dist(SD)
             block_mat = get_community_block_matrix(SD, n)
             SD.blockmatrix = normalize_block_matrix(block_mat, n, all_edges=True)
             models[i].append(SD)
@@ -143,7 +143,7 @@ def main():
                 if cbar:
                     plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
                 k+=1
-    plt.savefig('mosaicpwl', dpi=600)
+    plt.savefig('mosaicpwl.svg', dpi=600, format='svg')
     plt.show()
 
 
