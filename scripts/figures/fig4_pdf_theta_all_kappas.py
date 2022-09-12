@@ -13,7 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib 
 from scipy.special import gamma
-from scipy.integrate import quad, RK45
+from scipy.integrate import quad
 from scipy.optimize import fsolve
 from tqdm import tqdm
 
@@ -24,9 +24,6 @@ from hrg_functions import *
 
 from math import factorial, gamma
 from scipy.special import hyp2f1
-
-from util import *
-
 
 matplotlib.rc('text', usetex=True)
 matplotlib.rc('font', size=10)
