@@ -25,6 +25,7 @@ from hrg_functions import *
 from math import factorial
 from scipy.special import hyp2f1
 
+sys.path.insert(0, '../sectionIII_dimension/')
 from util import *
 
 

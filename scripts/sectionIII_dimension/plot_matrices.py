@@ -18,6 +18,13 @@ from hyperbolic_random_graph import *
 from hrg_functions import *
 from geometric_functions import *
 
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-ak', '--all_kappas', type=bool, default=False,
+                        help='if true plot matrices for all kappas')
+args = parser.parse_args()
+
 beta_ratio = 100.
 average_k = 10.
 N=350
@@ -28,7 +35,7 @@ opt_params = {'tol':1e-1,
             'verbose':True}
 rng = np.random.default_rng()
 
-all_kappas=True
+all_kappas=args.all_kappas
 
 if all_kappas:
     target_degrees = get_target_degree_sequence(average_k, 
