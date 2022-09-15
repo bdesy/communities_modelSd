@@ -17,6 +17,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import sys
 sys.path.insert(0, '../../src/')
 from geometric_functions import *
+
+import sys
+sys.path.insert(0, '../sectionIV_communities/')
 from overlap_util import * 
 from scipy.optimize import fsolve
 

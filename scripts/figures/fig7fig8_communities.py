@@ -14,6 +14,8 @@ import json
 import matplotlib.pyplot as plt
 import matplotlib
 
+import sys
+sys.path.insert(0, '../sectionIV_communities/')
 from overlap_util import *
 
 matplotlib.rc('text', usetex=True)
@@ -62,7 +64,7 @@ plt.xticks([0.2, 0.4, 0.6, 0.8])
 plt.tight_layout()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.savefig('figures/article-pwl-'+qty+'.svg', dpi=600, format='svg')
+plt.savefig('article-pwl-'+qty+'.svg', dpi=600, format='svg')
 plt.show()
 
 qty='r'
@@ -94,7 +96,7 @@ plt.legend(ncol=2, frameon=False, loc=(0.05, 0.75),columnspacing=1.)
 plt.xticks([0.2, 0.4, 0.6, 0.8])
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
-plt.savefig('figures/article-pwl-'+qty+'.svg', dpi=600, format='svg')
+plt.savefig('article-pwl-'+qty+'.svg', dpi=600, format='svg')
 plt.show()
 
 qty='degrees'
@@ -131,5 +133,5 @@ plt.tight_layout()
 ax.spines['top'].set_visible(False)
 ax.spines['right'].set_visible(False)
 ax.set_rasterized(True)
-plt.savefig('figures/article-pwl-'+qty+'.eps', dpi=600, format='eps')
+plt.savefig('article-pwl-'+qty+'.eps', dpi=600, format='eps')
 plt.show()
