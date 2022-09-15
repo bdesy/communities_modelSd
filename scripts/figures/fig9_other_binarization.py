@@ -18,13 +18,6 @@ from scipy.integrate import quad
 matplotlib.rc('text', usetex=True)
 matplotlib.rc('font', size=10)
 
-#import sys
-#sys.path.insert(0, '../../src/')
-#from hyperbolic_random_graph import *
-#from hrg_functions import *
-#from geometric_functions import *
-#from overlap_util import *
-
 def get_dict_key(D, dd, nc, beta, f):
     return 'S{}-'.format(D)+dd+'-{}coms-{}beta-{:.2f}sigmam'.format(nc, beta, f)
 
@@ -158,5 +151,5 @@ axes[0].spines['top'].set_visible(False)
 axes[0].spines['right'].set_visible(False)
 axes[1].spines['top'].set_visible(False)
 axes[1].spines['right'].set_visible(False)
-plt.savefig('figures/binarization.eps', dpi=600, format='eps')
+plt.savefig('binarization.eps', dpi=600, format='eps')
 plt.show()
