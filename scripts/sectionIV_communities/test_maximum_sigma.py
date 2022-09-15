@@ -17,7 +17,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import sys
 sys.path.insert(0, '../../src/')
 from geometric_functions import *
-from overlap_util import * 
+from util import * 
 
 matplotlib.rc('text', usetex=True)
 matplotlib.rc('font', size=14)

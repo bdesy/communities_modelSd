@@ -16,7 +16,7 @@ sys.path.insert(0, '../../src/')
 from hyperbolic_random_graph import *
 from hrg_functions import *
 from geometric_functions import *
-from overlap_util import *
+from util import *
 import argparse
 
 parser = argparse.ArgumentParser()

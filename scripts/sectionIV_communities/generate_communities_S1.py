@@ -18,8 +18,8 @@ from hrg_functions import *
 from geometric_functions import *
 import argparse
 from time import time
-from overlap_util import get_sigma_max, get_equal_communities_sizes, get_communities_coordinates
-from overlap_util import get_communities_array_closest, get_order_theta_within_communities
+from util import get_sigma_max, get_equal_communities_sizes, get_communities_coordinates
+from util import get_communities_array_closest, get_order_theta_within_communities
 
 
 #parse input arguments
