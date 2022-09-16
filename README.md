@@ -1,2 +1,2 @@
 # communities_modelSd
-Exploratory work on communities and dimensionality in the S_d model
+Code from paper « Dimension matters when modeling network communities in hyperbolic spaces ».
