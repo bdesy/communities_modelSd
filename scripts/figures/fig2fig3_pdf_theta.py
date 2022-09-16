@@ -43,7 +43,6 @@ ratio = 3.5
 N = 1000
 average_kappa = 10.
 Dmin, Dmax = 1, 5
-#colors = [cmap(D/Dmax) for D in range(Dmin, Dmax+1)]
 
 
 def get_approx_max_location(eta, beta, D):
@@ -76,18 +75,12 @@ for D in range(Dmax, Dmin-1, -1):
     R = compute_radius(N, D)
     mu = compute_default_mu(D, beta, average_kappa)
     eta = (mu*kappa_i*kappa_j)**(1./D) / R
-    #print(mu, 'mu')
 
     rho = np.sin(Dthetas)**(D-1)
     pij = 1./(1 + (Dthetas/eta)**beta)
     denum, error = integrated_connection_prob_eta(D, beta, eta)
-    
 
     print('D={}, eta = {}'.format(D, eta))
-    #other_denum = integrated_connection_prob_eta(D, beta, eta)
-    #other_denum = normalization_2f1(D, beta, eta)
-    #print('int is', denum, error)
-    #print('denum 2f1 is ', other_denum)
     
     c = colors[D-1]
 
@@ -95,28 +88,16 @@ for D in range(Dmax, Dmin-1, -1):
     plt.plot(Dthetas, pij*rho/denum, label=r'$D = {}$'.format(D), 
                 color=c, linewidth=2.5)
 
-    #approx_max = get_approx_max_location(eta, beta, D)
-    #print(approx_max, get_exact_max_location(eta, beta, D))
-    #plt.axvline(approx_max, color=c)
-    #plt.plot(Dthetas, pij*rho/other_denum, ':', color=c)
-    #print('normalisation verif : ', np.sum((pij*rho/denum)[:-1]*np.diff(Dthetas)))
-
-
     if limit:
         beta = 1000.*D
         mu = compute_default_mu(D, beta, average_kappa)
         pij = connection_prob(Dthetas, kappa_i, kappa_j, D, beta, R=R, mu=mu)
         denum, error = integrated_connection_prob(kappa_i, kappa_j, D, beta, mu=mu, R=R)
-        #plt.plot(Dthetas, pij*rho/denum, '-', color='white', linewidth=3, zorder=0)
         plt.plot(Dthetas, pij*rho/denum, '--', color=c, zorder=0)
-        #plt.plot(Dthetas, limite_beta_eta(Dthetas, eta, D), c='k', linewidth=1)
-        #plt.ylim(0, 32)
+
     else:
         pass
-        #plt.axvline(eta, color=c, alpha=0.8, linestyle='--')
-        #plt.ylim(0, 60)
 
-#plt.xticks([0, np.pi/8, np.pi/4],['0', r'$\pi/8$', r'$\pi/4$'])
 plt.xlabel(r'$\theta$ (rad)')
 plt.ylabel(r'$f_{X|Y,A}(\theta\ |\ \eta,1)$')
 
