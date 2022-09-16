@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Description : Community structure overlap experiment run in the S1 and S1 model
+Description : Community structure experiment in the S1 and S1 model
 
 Author: Béatrice Désy
 
@@ -186,8 +186,8 @@ def main():
                             res[key+'-r'] = data[2]
                             res[key+'-degrees'] = data[3]
                             block_matrices_dict[key] = block_matrices
-    filepath = '../../../scratch/data/'+args.filename
-    #filepath=args.filename
+    #filepath = '../../../scratch/data/'+args.filename
+    filepath=args.filename
     with open(filepath+'.json', 'w') as write_file:
         json.dump(res, write_file, indent=4)
     with open(filepath+'_blockmatrices.json', 'w') as write_file:

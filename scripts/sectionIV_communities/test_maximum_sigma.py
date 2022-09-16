@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Description : Tests if RMI can lead to a numerical definition of 
-maximum dispersion of communities on spheres
+Description : Display of maximal sigma affects angular dispersion of nodes.
 
 Author: Béatrice Désy
 
@@ -15,20 +14,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import sys
-sys.path.insert(0, '../../src/')
-from geometric_functions import *
 from util import * 
 
 matplotlib.rc('text', usetex=True)
 matplotlib.rc('font', size=14)
-
-def get_max_sigma1_unif(n):
-    sigma = np.sqrt(2*np.pi)/n
-    return sigma
-
-def get_max_sigma1_mixed(n):
-    sigma = np.pi/n
-    return sigma
 
 def plot_circle(ax, coordinates, labels, nb_com, N):
     theta = np.mod(coordinates.flatten(), 2*np.pi)
@@ -68,40 +57,6 @@ def plot_sphere(ax, coordinates, labels, nb_com, N):
     ax.set_zticks([])
     ax.set_axis_off()
 
-def sum_vmf(x, n):
-    s = np.exp(1./x**2)
-    if int(n)%2==0:
-        for i in range(1, int(n/2)):
-            s += 2*np.exp(np.cos( 2*np.pi*i / n ) / x**2)
-        s += np.exp(-1./x**2)
-    else:
-        for i in range(1, int((n+1)/2)):
-            s += 2*np.exp(np.cos( 2*np.pi*i / n ) / x**2)
-    return s
-
-def vmf_zero(x, n):
-    return sum_vmf(x, n) / (n*np.i0(1./x**2)) - 1
-
-def get_max_sigma_vmf_1D(n):
-    res = fsolve(vmf_zero, get_max_sigma1_unif(n), args=(n))
-    print(res[0]- get_max_sigma1_unif(n))
-    return res[0]
-'''
-print(get_max_sigma_vmf_1D(16), get_max_sigma1_unif(16))
-
-colors=['k', 'cyan', 'coral', 'olivedrab', 'tomato']
-#i=0
-for n in range(3, 100):
-    plt.plot(n, get_max_sigma_vmf_1D(n), 'o', c='cyan', ms=7)
-#    #plt.axhline(np.cos(np.pi/n), label='n={}'.format(n), c=colors[i])
-    plt.plot(n, get_max_sigma1_unif(n), 'o', c='k', ms=3)
-
-#sss = np.linspace(0.0001, np.pi, 1000)
-#plt.plot(sss, sss**2*np.log(np.i0(1./sss**2)))
-#plt.legend()
-plt.show()
-'''
-
 def main():
     N = 1000
     nb_com = [5, 10, 15]
@@ -112,7 +67,7 @@ def main():
                             subplot_kw=dict(projection='polar'))
     for i in range(3):
         n = nb_com[i]
-        sigma_max = get_max_sigma1_unif(n)
+        sigma_max = get_sigma_max(n, 1)
         for j in range(3):
             f = frac_sigma_max[j]
             sigma = f*sigma_max
@@ -128,12 +83,12 @@ def main():
     plt.savefig('S1_sigma_max.pdf', dpi=600, format='pdf')
     plt.show()
 
-    #plot for S^1
+    #plot for S^2
     fig, ax = plt.subplots(3,3, figsize=(7,7),
                             subplot_kw=dict(projection='3d'))
     for i in range(3):
         n = nb_com[i]
-        sigma_max = np.sqrt(2./n)
+        sigma_max = get_sigma_max(n, 2)
         for j in range(3):
             f = frac_sigma_max[j]
             sigma = f*sigma_max
@@ -148,10 +103,6 @@ def main():
     plt.axis('off')
     plt.savefig('S2_sigma_max.pdf', dpi=600, format='pdf')
     plt.show()
-'''
-    coordinatesS2, centersS2 = get_coordinates(N, 2, nb_com, sigma2, output_centers=True)
-    coordinates = [coordinatesS1, coordinatesS2]
-    sigma2 = get_sigma_d(sigma1, 2)
-'''
+
 if __name__=='__main__':
     main()
